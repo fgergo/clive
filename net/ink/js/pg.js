@@ -414,6 +414,7 @@ function smooth(fn) {
 
 function mkpg(id, cid) {
 	var wsurl = "wss://" + window.location.host + "/ws/" + cid;
+	console.log("pg.js, wsurl = " + wsurl);
 	var ws = new WebSocket(wsurl);
 	var post = function(args) {
 		if(!ws){
@@ -431,9 +432,9 @@ function mkpg(id, cid) {
 		var msg = JSON.stringify(ev);
 		try {
 			ws.send(msg);
-			// console.log("posting ", msg);
+			console.log("mkpg(), posting ", msg);
 		}catch(ex){
-			console.log("post: " + ex);
+			console.log("mkpg() post exception: " + ex);
 		}
 		return ev;
 	};

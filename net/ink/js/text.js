@@ -13,7 +13,7 @@
 */
 
 var selecting = false;
-var tdebug=false;
+var tdebug=true;
 
 // This is to prevent the event from being propagated to the parent
 // container.

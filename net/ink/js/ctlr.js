@@ -12,14 +12,16 @@ function CliveCtlr() {
 	this.c.clivectlr = this;
 	this.userresized = false;
 	this.wsurl = "wss://" + window.location.host + "/ws/" + this.cid;
-	if(this.d.wsaddr) {
-		this.wsurl = this.d.wsaddr + "/ws/" + this.cid;
-	}
+//	if(this.d.wsaddr) {
+//		this.wsurl = this.d.wsaddr + "/ws/" + this.cid;
+//	}
+// fgergo, commented out 3 lines: chrome console shows websocket error
 
 	$(this.d).addClass("clivectl");
 	var self = this;
 	// use self here, because post will be bound also to this.d
 	this.post = function(args) {
+		console.log("CliveCtrl(), this.post()");
 		var ws = self.ws;
 		if(!ws){
 			console.log("post: no ws");
@@ -41,9 +43,9 @@ function CliveCtlr() {
 		var msg = JSON.stringify(ev);
 		try {
 			self.ws.send(msg);
-			// console.log("posting ", msg);
+			console.log("CliveCtrl(), self.ws.send(), msg ", msg);
 		}catch(ex){
-			console.log("post: " + ex);
+			console.log("CliveCtrl(), exception " + ex);
 		}
 		// if this is a cut, it implies a del and we
 		// must advance our vers, the event didn't
@@ -87,6 +89,7 @@ function CliveCtlr() {
 		}
 	};
 
+	console.log("ctrl.js, wsurl = " + this.wsurl);
 	this.ws = new WebSocket(this.wsurl);
 	this.ws.onopen = function() {
 		self.post(["id"]);
