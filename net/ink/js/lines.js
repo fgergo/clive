@@ -774,7 +774,6 @@ function DrawLines(c) {
 				// unselected line
 				ctx.clearRect(1, y, this.c.width-this.marginsz-1, lnht);
 				var t = this.tabtxt(ln.txt);
-				ctx.fillStyle = "#ff0000";
 				ctx.fillText(t, this.marginsz, y);
 				return true;
 			}
@@ -788,7 +787,6 @@ function DrawLines(c) {
 				s0pos = s0t.length;
 				dx += ctx.measureText(s0t).width;
 				ctx.clearRect(1, y, dx, lnht);
-				ctx.fillStyle = "#ffffff";
 				ctx.fillText(s0t, this.marginsz, y);
 			}
 			// from p0 to p1 selected
@@ -812,7 +810,6 @@ function DrawLines(c) {
 				ctx.fillRect(dx, y, sx, lnht);
 			}
 			ctx.fillStyle = old;
-			ctx.fillStyle = "#ffffff";
 			ctx.fillText(s1t, dx, y);
 			if(this.p1 > ln.off+ln.txt.length) {
 				return true;
@@ -823,7 +820,6 @@ function DrawLines(c) {
 				return true;
 			}
 			var s2t = this.tabtxt(ln.txt.slice(s0+s1, ln.txt.length), s1pos);
-			ctx.fillStyle = "#ffffff";
 			ctx.fillText(s2t, dx+sx, y);
 			return true;
 		}
