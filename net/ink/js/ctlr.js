@@ -21,7 +21,6 @@ function CliveCtlr() {
 	var self = this;
 	// use self here, because post will be bound also to this.d
 	this.post = function(args) {
-		console.log("CliveCtrl(), this.post()");
 		var ws = self.ws;
 		if(!ws){
 			console.log("post: no ws");
@@ -43,9 +42,9 @@ function CliveCtlr() {
 		var msg = JSON.stringify(ev);
 		try {
 			self.ws.send(msg);
-			console.log("CliveCtrl(), self.ws.send(), msg ", msg);
+			// console.log("posting ", msg);
 		}catch(ex){
-			console.log("CliveCtrl(), exception " + ex);
+			console.log("post: " + ex);
 		}
 		// if this is a cut, it implies a del and we
 		// must advance our vers, the event didn't
@@ -89,7 +88,6 @@ function CliveCtlr() {
 		}
 	};
 
-	console.log("ctrl.js, wsurl = " + this.wsurl);
 	this.ws = new WebSocket(this.wsurl);
 	this.ws.onopen = function() {
 		self.post(["id"]);

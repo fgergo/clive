@@ -10,7 +10,7 @@
 var tffixed = "monospace";
 var tfvar = "Verdana";	// or Lucida Grande
 var fontscheckedout = false;
-var tdebug = true;
+var tdebug = false;
 
 function checkoutfonts(ctx) {
 	if(fontscheckedout)
@@ -702,7 +702,6 @@ function DrawLines(c) {
 		}
 		// at scale 1, we keep two empty pts at the bottom.
 		var ht = this.fontht - 2*this.tscale;
-		console.log("lines.js, fixfont(), ctx.font=" + mod + " "  + ht+"px "+ style);
 		ctx.font = mod + " "  + ht+"px "+ style;
 		ctx.textBaseline="top";
 	};
@@ -761,10 +760,7 @@ function DrawLines(c) {
 
 	// draw a line and return false if it's out of the draw space.
 	this.drawline = function(ln) {
-		console.log("lines.js, drawline(), ln.txt = " + ln.txt);
 		var ctx = this.ctx;
-		ctx.fillStyle = "red";
-		ctx.fillRect(20, 20, 70, 50);
 		var lnht = this.fontht;
 		var avail = this.c.width - 2*this.marginsz - 1;
 		var y = (ln.lni-this.ln0.lni)*lnht;
@@ -778,11 +774,8 @@ function DrawLines(c) {
 				// unselected line
 				ctx.clearRect(1, y, this.c.width-this.marginsz-1, lnht);
 				var t = this.tabtxt(ln.txt);
-				console.log("lines.js, drawline(), unselected line,  t = " + t);
 				ctx.fillStyle = "#ff0000";
 				ctx.fillText(t, this.marginsz, y);
-		ctx.fillStyle = "red";
-		ctx.fillRect(20, 20, 70, 50);
 				return true;
 			}
 			// up to p0 unselected
@@ -795,11 +788,8 @@ function DrawLines(c) {
 				s0pos = s0t.length;
 				dx += ctx.measureText(s0t).width;
 				ctx.clearRect(1, y, dx, lnht);
-				console.log("lines.js, drawline(), txt = " + s0t);
-				ctx.fillStyle = "#ff0000";
+				ctx.fillStyle = "#ffffff";
 				ctx.fillText(s0t, this.marginsz, y);
-		ctx.fillStyle = "red";
-		ctx.fillRect(20, 20, 70, 50);
 			}
 			// from p0 to p1 selected
 			var s1 = ln.txt.length - s0;
@@ -822,11 +812,8 @@ function DrawLines(c) {
 				ctx.fillRect(dx, y, sx, lnht);
 			}
 			ctx.fillStyle = old;
-			console.log("lines.js, drawline(), fillStyle=old, s1t = " + s1t);
-			ctx.fillStyle = "#ff0000";
+			ctx.fillStyle = "#ffffff";
 			ctx.fillText(s1t, dx, y);
-		ctx.fillStyle = "red";
-		ctx.fillRect(20, 20, 70, 50);
 			if(this.p1 > ln.off+ln.txt.length) {
 				return true;
 			}
@@ -836,22 +823,16 @@ function DrawLines(c) {
 				return true;
 			}
 			var s2t = this.tabtxt(ln.txt.slice(s0+s1, ln.txt.length), s1pos);
-			console.log("lines.js, drawline(), this.tabtxt, s2t = " + s2t);
-			ctx.fillStyle = "#ff0000";
+			ctx.fillStyle = "#ffffff";
 			ctx.fillText(s2t, dx+sx, y);
-		ctx.fillStyle = "red";
-		ctx.fillRect(20, 20, 70, 50);
 			return true;
 		}
 
 		// unselected line
 		ctx.clearRect(1, y, this.c.width-this.marginsz-1, lnht);
 		var t = this.tabtxt(ln.txt);
-		console.log("lines.js, drawline(), this.tabtxt, t = " + t);
-		ctx.fillStyle = "#ff0000";
+		ctx.fillStyle = "#ffffff";
 		ctx.fillText(t, this.marginsz, y);
-		ctx.fillStyle = "red";
-		ctx.fillRect(20, 20, 70, 50);
 
 		if(this.p0 < ln.off || this.p0 > ln.off + ln.txt.length) {
 			return true;
@@ -879,7 +860,6 @@ function DrawLines(c) {
 	};
 
 	this.redrawtext = function() {
-		console.log("redrawtext() called");
 		this.fixfont();
 		this.nlines = Math.floor(this.c.height/this.fontht);
 		if(!this.tickimg) {
