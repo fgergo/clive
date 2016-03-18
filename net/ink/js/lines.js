@@ -8,7 +8,7 @@
  * global font names for those variants.
  */
 var tffixed = "monospace";
-var tfvar = "Verdana";	// or Lucida Grande
+var tfvar = "Lucida Grande";	// or Verdana
 var fontscheckedout = false;
 var tdebug = false;
 
