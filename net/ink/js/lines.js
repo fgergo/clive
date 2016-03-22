@@ -13,31 +13,36 @@ var fontscheckedout = false;
 var tdebug = false;
 
 function checkoutfonts(ctx) {
-	if(fontscheckedout)
+	if(fontscheckedout) {
 		return;
+	}
 	fontscheckedout = true;
 	var old = ctx.font;
 	ctx.font = "50px Arial";
-	var sz = ctx.measureText("ABC").width;
+	var arial_sz = ctx.measureText("ABC").width;
 	ctx.font = "50px " + tffixed;
-	if(ctx.measureText("ABC").width == sz)
+	if(ctx.measureText("ABC").width == arial_sz) {		// if tffixed == Arial change tffixed
 		tffixed = "Courier";
+	}
 	ctx.font = "50px " + tfvar;
-	if(ctx.measureText("ABC").width == sz)
+	if(ctx.measureText("ABC").width == arial_sz) {		// if tfvar == Arial change tffixed to Arial???
 		tffixed = "Arial";
+	}
 	ctx.font = old;
 }
 
 var wordre = null;
 function iswordchar(c) {
-	if(!wordre)
+	if(!wordre) {
 		wordre = /\w/;
+	}
 	return wordre.test(c);
 }
 
 function islongwordchar(c) {
-	if(!wordre)
+	if(!wordre) {
 		wordre = /\w/;
+	}
 	return c == '-' || c == '(' || c == ')' || c == '/' || c == '.' || c == ':' || c == '#' || c == ',' || wordre.test(c);
 }
 
@@ -51,15 +56,17 @@ function isrparen(c) {
 
 function rparen(c) {
 	var i = "([{<".indexOf(c);
-	if(i < 0)
+	if(i < 0) {
 		return c;
+	}
 	return ")]}>".charAt(i);
 }
 
 function lparen(c) {
 	var i = ")]}>".indexOf(c);
-	if(i < 0)
+	if(i < 0) {
 		return c;
+	}
 	return "([{<".charAt(i);
 }
 
@@ -148,8 +155,8 @@ function Line(lni, off, txt, eol) {
 	};
 
 	this.renumber = function() {
-		for(var ln = this; ln != null; ln = ln.next) {
-			if(ln.prev == null) {
+		for(var ln = this; ln !== null; ln = ln.next) {
+			if(ln.prev === null) {
 				ln.off = 0;
 				ln.lni = 0;
 			} else {
@@ -185,8 +192,9 @@ function Lines(els) {
 
 	// pos0 is optional (0 by default).
 	this.tabtxt = function(t, pos0) {
-		if(t.indexOf('\t') < 0)
+		if(t.indexOf('\t') < 0) {
 			return t;
+		}
 		var s = "";
 		var pos = 0;
 		if(pos0) {
@@ -259,7 +267,7 @@ function Lines(els) {
 				break;
 			}
 		}
-	}
+	};
 
 	this.addln = function(ln) {
 		ln.prev = this.lne;
@@ -280,10 +288,11 @@ function Lines(els) {
 	// seek a line (first is 0).
 	this.seekln = function(pos) {
 		var ln = this.lns;
-		for(var ln = this.lns; ln; ln = ln.next) {
-			if(pos-- <= 0) {
+		for(ln = this.lns; ln; ln = ln.next) {
+			if(pos <= 0) {
 				return ln;
 			}
+			pos--;
 		}
 		return this.lns;
 	};
@@ -302,7 +311,7 @@ function Lines(els) {
 
 	// return the pos for a seek
 	this.seekpos = function(ln, lnoff) {
-		if(ln == null) {
+		if(ln === null) {
 			return 0;
 		}
 		if(lnoff > ln.txt.length) {
@@ -323,9 +332,9 @@ function Lines(els) {
 		// TODO: should get an indication regarding at which
 		// point it's safe to assume that no further reformat
 		// work is needed and stop there.
-		for(var ln = ln0; ln != null; ) {
+		for(var ln = ln0; ln !== null; ) {
 			// merge text on the same line
-			while(!ln.eol && ln.next != null) {
+			while(!ln.eol && ln.next !== null) {
 				if(ln.next == this.lne) {
 					this.lne = ln;
 				}
@@ -336,7 +345,7 @@ function Lines(els) {
 			}
 			// remove empty lines but keep an empty line at the end.
 			var next = ln.next;
-			if(ln.len() == 0 && next) {
+			if(ln.len() === 0 && next) {
 				if(this.lne == ln) {
 					console.log("lines: reformat join bug?");
 				}
@@ -354,7 +363,7 @@ function Lines(els) {
 			ln = next;
 		}
 		// recompute wraps, offsets, and numbers.
-		for(var ln = ln0; ln != null; ln = ln.next) {
+		for(ln = ln0; ln !== null; ln = ln.next) {
 			if(!ln.prev) {
 				ln.off = 0;
 				ln.lni = 0;
@@ -394,8 +403,10 @@ function Lines(els) {
 	this.ins1 = function(t, dontscroll) {
 		this.untick();
 		this.markins(this.p0, t.length);
-		var xln, lnoff;
-		[xln, lnoff] = this.seek(this.p0);
+		var xln, lnoff, tmp;
+		tmp = this.seek(this.p0);
+		xln = tmp[0];
+		lnoff = tmp[1];
 		if(!xln) {
 			console.log("Lines.ins: no line for p0");
 			return;
@@ -450,8 +461,10 @@ function Lines(els) {
 			this.p0--;
 		}
 		this.markdel(this.p0, this.p1);
-		var xln, lnoff;
-		[xln, lnoff] = this.seek(this.p0);
+		var xln, lnoff, tmp;
+		tmp = this.seek(this.p0);
+		xln = tmp[0];
+		lnoff = tmp[1];
 		if(!xln) {
 			console.log("lines: del: no line");
 			return;
@@ -459,7 +472,7 @@ function Lines(els) {
 		var ndel = this.p1 - this.p0;
 		var tot = 0;
 		var xln0 = xln;
-		for(; tot < ndel && xln != null; xln = xln.next) {
+		for(; tot < ndel && xln !== null; xln = xln.next) {
 			if(tdebug && 0) {
 				console.log("lines del " + ndel + " loff " + lnoff + " " + xln.str());
 			}
@@ -468,7 +481,7 @@ function Lines(els) {
 				xln.eol = false;
 				nd++;
 			}
-			if(tot == 0 && nd == ndel && xln.eol) {
+			if(tot === 0 && nd == ndel && xln.eol) {
 				// del within a line; don't reformat; redraw it.
 				if(tdebug) {
 					console.log("single line del");
@@ -499,9 +512,11 @@ function Lines(els) {
 		if(p0 == p1 || p0 >= this.nrunes || p1 < p0 || p1 <= 0) {
 			return "";
 		}
-		var ln0, lnoff;
-		[ln0, lnoff] = this.seek(p0);
-		if(ln0 == null) {
+		var ln0, lnoff, tmp;
+		tmp = this.seek(p0);
+		ln0 = tmp[0];
+		lnoff = tmp[1];
+		if(ln0 === null) {
 			return "";
 		}
 		var ln = ln0;
@@ -522,7 +537,7 @@ function Lines(els) {
 			}
 			ln = ln.next;
 			off = 0;
-		}while(tot < nget && ln != null);
+		}while(tot < nget && ln !== null);
 		return txt;
 	};
 
@@ -661,11 +676,11 @@ function DrawLines(c) {
 	this.nlines = 0;	// lines in window
 	this.frlines = 0;	// lines with text
 	this.frsize = 0;	// nb. of runes in frame
-	this.c = c;			// canvas, perhaps it's this.
+	this.c = c;
 	this.fontstyle = 'r';
 	this.tabstop = 4;
 	this.marginsz = 6;
-	this.tscale = 4;	// scale must be even; we /2 without Math.floor
+	this.tscale = 1;	// scale must be even; we /2 without Math.floor
 	this.secondary = 0;	// button for selection
 
 
@@ -678,20 +693,22 @@ function DrawLines(c) {
 	this.ctx = ctx;
 
 	checkoutfonts(ctx);
-	ctx.fillStyle = "#FFFFEA";
+	ctx.fillStyle = "#ffffea";
 	var tabtext = Array(this.tabstop+1).join("X");
 
-	this.tabwid = ctx.measureText(tabtext).width;
+	// this.tabwid = ctx.measureText(tabtext).width;	// fgergo: probably not needed
 	// 14 pixels = 12pt font + 2pts of separation at the bottom,
 	// but we scale the canvas *tscale.
-	this.fontht = 14*this.tscale;
+	this.fontht = 18*this.tscale;	// fgergo: originally 14*this.tscale
 
 	this.fixfont = function() {
 		var ctx = this.ctx;
+
 		var mod = "";
 		var style = "";
 		style = tfvar;
-		if(this.fontstyle.indexOf('r') === -1) {
+
+		if((this.fontstyle.indexOf('r') === -1) && (this.fontstyle.indexOf('t') === -1)) {
 			style = tffixed;
 		}
 		if(this.fontstyle.indexOf('b') > -1) {
@@ -700,9 +717,9 @@ function DrawLines(c) {
 		if(this.fontstyle.indexOf('i') > -1) {
 			mod = "italic " + mod;
 		}
-		// at scale 1, we keep two empty pts at the bottom.
-		var ht = this.fontht - 2*this.tscale;
-		ctx.font = mod + " "  + ht+"px "+ style;
+		// at scale 1, we keep empty pts at the bottom.
+		var ht = this.fontht - 4*this.tscale;
+		ctx.font = mod + " "  + ht + "px "+ style;
 		ctx.textBaseline="top";
 	};
 
@@ -723,49 +740,46 @@ function DrawLines(c) {
 			return false;
 		}
 
-		var ofs = ctx.fillStyle;	
-		ctx.fillStyle = "#ffffea";
-		ctx.fillRect(1, pos, this.c.width-1, this.fontht);
+		var ofs = ctx.fillStyle;
+		ctx.fillStyle = "#ffffea";			// set background of text area
+		ctx.fillRect(0, pos, this.c.width, this.fontht);
 		// ctx.clearRect(1, pos, this.c.width-1, this.fontht);
 		ctx.fillStyle = ofs;
 		return true;
 	};
 
+	// create tick (cursor) image
 	this.mktick = function() {
+		this.clearline(0);	// set background for tick
+
 		var ctx = this.ctx;
-		var x = ctx.lineWidth;
-		ctx.lineWidth = 1;
-		var d = 3*this.tscale;
-		var ofs = ctx.fillStyle;
+		var ofs = ctx.fillStyle;	// save fillStyle
+		var d = 3*this.tscale;		// tick's width
 		ctx.fillStyle = "red";
-		ctx.fillRect(0, 0, d, d);
-		ctx.fillRect(0, this.fontht-d, d, d);
-		ctx.moveTo(d/2, 0);
-		ctx.fillStyle = "red";
-		ctx.lineTo(d/2, this.fontht);
-		ctx.fillStyle = "red";
-		ctx.stroke();
-		ctx.lineWidth = x;
+		ctx.fillRect(0, 0, d, d);	// tick's top square
+		ctx.fillRect(0, this.fontht-d, d, d);	// tick's bottom square
+		ctx.fillRect(Math.floor(d/2), 0, 1, this.fontht);	// tick's line between top and bottom square
 		this.tickimg = ctx.getImageData(0, 0, d, this.fontht);
-		ctx.fillStyle = ofs;
+		ctx.fillStyle = ofs;		// restore fillStyle
 	};
 
 	this.untick = function() {
-		if(!this.saved) {
+		if(this.saved === undefined) {
 			return;
 		}
 		var ctx = this.ctx;
-		ctx.putImageData(this.saved, this.tickx, this.ticky);
+		ctx.putImageData(this.saved, this.tickx, this.ticky);	// restore original image under tick
 		this.saved = undefined;
 	};
 
 	this.tick = function(x, y) {
 		var ctx = this.ctx;
 		if(0)console.log("tick", x, y);
-		this.saved = ctx.getImageData(x, y, 3*this.tscale, this.fontht);
+		var d = 3*this.tscale;		// tick's width, must match with mktick()
+		this.saved = ctx.getImageData(x, y, d, this.fontht);	// save image under tick
 		this.tickx = x;
 		this.ticky = y;
-		ctx.putImageData(this.tickimg, x, y);
+		ctx.putImageData(this.tickimg, x, y);	// show tick (cursor)
 	};
 
 	// draw a line and return false if it's out of the draw space.
@@ -864,7 +878,7 @@ function DrawLines(c) {
 
 		// line with tick
 		var x = this.posdx(ln.txt, this.p0 - ln.off);
-		x += this.marginsz - 3*this.tscale/2;	// a bit to the left
+		x += this.marginsz - Math.round(this.tscale/2);	// a bit to the left
 		this.tick(x, y);
 		return true;
 	};
