@@ -8,7 +8,7 @@
  * global font names for those variants.
  */
 var tffixed = "monospace";
-var tfvar = "Verdana";	// or Lucida Grande
+var tfvar = "Lucida Grande";	// or Verdana
 var fontscheckedout = false;
 var tdebug = false;
 
@@ -699,7 +699,7 @@ function DrawLines(c) {
 	// this.tabwid = ctx.measureText(tabtext).width;	// fgergo: probably not needed
 	// 14 pixels = 12pt font + 2pts of separation at the bottom,
 	// but we scale the canvas *tscale.
-	this.fontht = 18*this.tscale;	// fgergo: originally 14*this.tscale
+	this.fontht = 16*this.tscale;	// fgergo: originally 14*this.tscale
 
 	this.fixfont = function() {
 		var ctx = this.ctx;
@@ -718,7 +718,7 @@ function DrawLines(c) {
 			mod = "italic " + mod;
 		}
 		// at scale 1, we keep empty pts at the bottom.
-		var ht = this.fontht - 4*this.tscale;
+		var ht = this.fontht - 2*this.tscale;
 		ctx.font = mod + " "  + ht + "px "+ style;
 		ctx.textBaseline="top";
 	};
@@ -742,8 +742,10 @@ function DrawLines(c) {
 
 		var ofs = ctx.fillStyle;
 		ctx.fillStyle = "#ffffea";			// set background of text area
-		ctx.fillRect(0, pos, this.c.width, this.fontht);
-		// ctx.clearRect(1, pos, this.c.width-1, this.fontht);
+		if(tdebug && ((i%2) === 1)) {		// for debugging text rendering on canvas
+			ctx.fillStyle = "#d6f5ff";
+		};
+		ctx.fillRect(0, pos, this.c.width-this.marginsz, this.fontht);
 		ctx.fillStyle = ofs;
 		return true;
 	};
@@ -787,20 +789,18 @@ function DrawLines(c) {
 		var ctx = this.ctx;
 		var lnht = this.fontht;
 		var avail = this.c.width - 2*this.marginsz - 1;
-		var y = (ln.lni-this.ln0.lni)*lnht;
+		var currline = ln.lni-this.ln0.lni;
+		var y = currline*lnht-1;
 		if(y > this.c.height) {
 			return false;
 		}
+
+		this.clearline(currline);
 
 		// non-empty selection.
 		if(this.p0 != this.p1) {
 			if(this.p0 > ln.off+ln.txt.length || this.p1 < ln.off){
 				// unselected line
-				var ofs = ctx.fillStyle;
-				ctx.fillStyle = "#ffffea";
-				ctx.fillRect(1, y, this.c.width-this.marginsz-1, lnht);
-				ctx.fillStyle = ofs;
-				// ctx.clearRect(1, y, this.c.width-this.marginsz-1, lnht);
 				var t = this.tabtxt(ln.txt);
 				ctx.fillText(t, this.marginsz, y);
 				return true;
@@ -814,11 +814,6 @@ function DrawLines(c) {
 				var s0t = this.tabtxt(ln.txt.slice(0, s0));
 				s0pos = s0t.length;
 				dx += ctx.measureText(s0t).width;
-				var ofs = ctx.fillStyle;
-				ctx.fillStyle = "#ffffea";
-				ctx.fillRect(1, y, dx, lnht);
-				ctx.fillStyle = ofs;
-				// ctx.clearRect(1, y, dx, lnht);
 				ctx.fillText(s0t, this.marginsz, y);
 			}
 			// from p0 to p1 selected
@@ -830,16 +825,16 @@ function DrawLines(c) {
 			var sx = ctx.measureText(s1t).width;
 			var old = ctx.fillStyle;
 			if(this.secondary >= 2) {
-				ctx.fillStyle = "#FF7575";
+				ctx.fillStyle = "#FF7575";	// sweeping B2 or B3
 			} else if(this.secondary) {
-				ctx.fillStyle = "#7373FF";
+				ctx.fillStyle = "#7373FF";	// ???
 			} else {
-				ctx.fillStyle = "#D1A0A0";
+				ctx.fillStyle = "#D1A0A0";	// sweeping B1
 			}
 			if(this.p1 > ln.off+ln.txt.length) {
-				ctx.fillRect(dx, y, this.c.width-dx-this.marginsz-1, lnht);
+				ctx.fillRect(dx, y+1, this.c.width-dx-this.marginsz-1, lnht);
 			} else {
-				ctx.fillRect(dx, y, sx, lnht);
+				ctx.fillRect(dx, y+1, sx, lnht);
 			}
 			ctx.fillStyle = old;
 			ctx.fillText(s1t, dx, y);
@@ -849,8 +844,7 @@ function DrawLines(c) {
 			// from p1 unselected
 			var ofs = ctx.fillStyle;
 			ctx.fillStyle = "#ffffea";
-			ctx.fillRect(dx+sx, y, this.c.width-(dx+sx)-this.marginsz-1, lnht);
-			// ctx.clearRect(dx+sx, y, this.c.width-(dx+sx)-this.marginsz-1, lnht);
+			ctx.fillRect(dx+sx, y+1, this.c.width-(dx+sx)-this.marginsz-1, lnht);
 			ctx.fillStyle = ofs;
 
 			if(s1 >= ln.txt.length) {
@@ -862,14 +856,9 @@ function DrawLines(c) {
 		}
 
 		// unselected line
-		var ofs = ctx.fillStyle;
-		ctx.fillStyle = "#ffffea";
-		ctx.fillRect(1, y, this.c.width-this.marginsz-1, lnht);
-		// ctx.clearRect(1, y, this.c.width-this.marginsz-1, lnht);
-		ctx.fillStyle = ofs;
 
 		var t = this.tabtxt(ln.txt);
-		ctx.fillStyle = "#000000";		// draw text black
+		ctx.fillStyle = "black";		// text color is black
 		ctx.fillText(t, this.marginsz, y);
 
 		if(this.p0 < ln.off || this.p0 > ln.off + ln.txt.length) {
@@ -879,7 +868,7 @@ function DrawLines(c) {
 		// line with tick
 		var x = this.posdx(ln.txt, this.p0 - ln.off);
 		x += this.marginsz - Math.round(this.tscale/2);	// a bit to the left
-		this.tick(x, y);
+		this.tick(x, y+1);
 		return true;
 	};
 
@@ -891,18 +880,12 @@ function DrawLines(c) {
 		var ofs = ctx.fillStyle;
 		ctx.fillStyle = "#ffffea";
 		ctx.fillRect(this.c.width-this.marginsz, 0, this.marginsz, y0);
-		// ctx.clearRect(this.c.width-this.marginsz, 0, this.marginsz, y0);
-		ctx.fillStyle = ofs;
 		
-		var old = ctx.fillStyle;
 		ctx.fillStyle = "#7373FF";
 		ctx.fillRect(this.c.width-this.marginsz, y0, this.marginsz, dy);
-		ctx.fillStyle = old;
 
-		var ofs = ctx.fillStyle;
 		ctx.fillStyle = "#ffffea";
 		ctx.fillRect(this.c.width-this.marginsz, y0+dy, this.marginsz, this.c.height-(y0+dy));
-		// ctx.clearRect(this.c.width-this.marginsz, y0+dy, this.marginsz, this.c.height-(y0+dy));
 		ctx.fillStyle = ofs;
 	};
 

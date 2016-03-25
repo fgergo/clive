@@ -123,7 +123,7 @@ function CliveText(d, c, cid, id) {
 		// makes the text better.
 		c.width(dx);
 		c.height(dy);
-		this.c.width = this.tscale*dx;
+		this.c.width = this.tscale*dx - 2*this.marginsz;
 		this.c.height = this.tscale*dy;
 		this.nlines = Math.floor(this.c.height/this.fontht);
 		this.saved = null;
