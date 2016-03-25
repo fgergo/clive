@@ -10,7 +10,7 @@
 var tffixed = "monospace";
 var tfvar = "Lucida Grande";	// or Verdana
 var fontscheckedout = false;
-var tdebug = false;
+var tdebug = true;
 
 function checkoutfonts(ctx) {
 	if(fontscheckedout) {
@@ -694,12 +694,12 @@ function DrawLines(c) {
 
 	checkoutfonts(ctx);
 	ctx.fillStyle = "#ffffea";
-	var tabtext = Array(this.tabstop+1).join("X");
+	// var tabtext = Array(this.tabstop+1).join("X");
 
 	// this.tabwid = ctx.measureText(tabtext).width;	// fgergo: probably not needed
 	// 14 pixels = 12pt font + 2pts of separation at the bottom,
 	// but we scale the canvas *tscale.
-	this.fontht = 16*this.tscale;	// fgergo: originally 14*this.tscale
+	this.fontht = 15*this.tscale;	// fgergo: originally 14*this.tscale
 
 	this.fixfont = function() {
 		var ctx = this.ctx;
@@ -718,7 +718,7 @@ function DrawLines(c) {
 			mod = "italic " + mod;
 		}
 		// at scale 1, we keep empty pts at the bottom.
-		var ht = this.fontht - 2*this.tscale;
+		var ht = this.fontht - 1*this.tscale;
 		ctx.font = mod + " "  + ht + "px "+ style;
 		ctx.textBaseline="top";
 	};
@@ -742,8 +742,8 @@ function DrawLines(c) {
 
 		var ofs = ctx.fillStyle;
 		ctx.fillStyle = "#ffffea";			// set background of text area
-		if(tdebug && ((i%2) === 1)) {		// for debugging text rendering on canvas
-			ctx.fillStyle = "#d6f5ff";
+		if((i%2) == 1) {		// for debugging text rendering on canvas
+			if(tdebug) ctx.fillStyle = "#d6f5ff";
 		};
 		ctx.fillRect(0, pos, this.c.width-this.marginsz, this.fontht);
 		ctx.fillStyle = ofs;
@@ -790,7 +790,8 @@ function DrawLines(c) {
 		var lnht = this.fontht;
 		var avail = this.c.width - 2*this.marginsz - 1;
 		var currline = ln.lni-this.ln0.lni;
-		var y = currline*lnht-1;
+		var fontpixeloffset = 2;	// fgergo: not yet known why canvas won't start to draw from top
+		var y = currline*lnht-fontpixeloffset;
 		if(y > this.c.height) {
 			return false;
 		}
@@ -832,9 +833,9 @@ function DrawLines(c) {
 				ctx.fillStyle = "#D1A0A0";	// sweeping B1
 			}
 			if(this.p1 > ln.off+ln.txt.length) {
-				ctx.fillRect(dx, y+1, this.c.width-dx-this.marginsz-1, lnht);
+				ctx.fillRect(dx, y+fontpixeloffset, this.c.width-dx-this.marginsz-1, lnht);
 			} else {
-				ctx.fillRect(dx, y+1, sx, lnht);
+				ctx.fillRect(dx, y+fontpixeloffset, sx, lnht);
 			}
 			ctx.fillStyle = old;
 			ctx.fillText(s1t, dx, y);
@@ -844,7 +845,7 @@ function DrawLines(c) {
 			// from p1 unselected
 			var ofs = ctx.fillStyle;
 			ctx.fillStyle = "#ffffea";
-			ctx.fillRect(dx+sx, y+1, this.c.width-(dx+sx)-this.marginsz-1, lnht);
+			ctx.fillRect(dx+sx, y+fontpixeloffset, this.c.width-(dx+sx)-this.marginsz-1, lnht);
 			ctx.fillStyle = ofs;
 
 			if(s1 >= ln.txt.length) {
@@ -868,7 +869,7 @@ function DrawLines(c) {
 		// line with tick
 		var x = this.posdx(ln.txt, this.p0 - ln.off);
 		x += this.marginsz - Math.round(this.tscale/2);	// a bit to the left
-		this.tick(x, y+1);
+		this.tick(x, y+fontpixeloffset);
 		return true;
 	};
 
