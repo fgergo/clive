@@ -790,8 +790,9 @@ function DrawLines(c) {
 		var lnht = this.fontht;
 		var avail = this.c.width - 2*this.marginsz - 1;
 		var currline = ln.lni-this.ln0.lni;
-		var fontpixeloffset = 2;	// fgergo: not yet known why canvas won't start to draw from top
-		var y = currline*lnht-fontpixeloffset;
+
+		var fontpixeloffset = -2;	// fgergo: not yet known why canvas won't start to draw from top
+		var y = currline*lnht;
 		if(y > this.c.height) {
 			return false;
 		}
@@ -803,7 +804,7 @@ function DrawLines(c) {
 			if(this.p0 > ln.off+ln.txt.length || this.p1 < ln.off){
 				// unselected line
 				var t = this.tabtxt(ln.txt);
-				ctx.fillText(t, this.marginsz, y);
+				ctx.fillText(t, this.marginsz, y+fontpixeloffset);
 				return true;
 			}
 			// up to p0 unselected
@@ -815,7 +816,7 @@ function DrawLines(c) {
 				var s0t = this.tabtxt(ln.txt.slice(0, s0));
 				s0pos = s0t.length;
 				dx += ctx.measureText(s0t).width;
-				ctx.fillText(s0t, this.marginsz, y);
+				ctx.fillText(s0t, this.marginsz, y+fontpixeloffset);
 			}
 			// from p0 to p1 selected
 			var s1 = ln.txt.length - s0;
@@ -833,35 +834,33 @@ function DrawLines(c) {
 				ctx.fillStyle = "#D1A0A0";	// sweeping B1
 			}
 			if(this.p1 > ln.off+ln.txt.length) {
-				ctx.fillRect(dx, y+fontpixeloffset, this.c.width-dx-this.marginsz-1, lnht);
+				ctx.fillRect(dx, y, this.c.width-dx-this.marginsz-1, lnht);
 			} else {
-				ctx.fillRect(dx, y+fontpixeloffset, sx, lnht);
+				ctx.fillRect(dx, y, sx, lnht);
 			}
 			ctx.fillStyle = old;
-			ctx.fillText(s1t, dx, y);
+			ctx.fillText(s1t, dx, y+fontpixeloffset);
 			if(this.p1 > ln.off+ln.txt.length) {
 				return true;
 			}
 			// from p1 unselected
 			var ofs = ctx.fillStyle;
 			ctx.fillStyle = "#ffffea";
-			ctx.fillRect(dx+sx, y+fontpixeloffset, this.c.width-(dx+sx)-this.marginsz-1, lnht);
+			ctx.fillRect(dx+sx, y, this.c.width-(dx+sx)-this.marginsz-1, lnht);
 			ctx.fillStyle = ofs;
 
 			if(s1 >= ln.txt.length) {
 				return true;
 			}
 			var s2t = this.tabtxt(ln.txt.slice(s0+s1, ln.txt.length), s1pos);
-			ctx.fillText(s2t, dx+sx, y);
+			ctx.fillText(s2t, dx+sx, y+fontpixeloffset);
 			return true;
 		}
 
 		// unselected line
-
 		var t = this.tabtxt(ln.txt);
-		ctx.fillStyle = "black";		// text color is black
-		ctx.fillText(t, this.marginsz, y);
-
+		ctx.fillStyle = "black";
+		ctx.fillText(t, this.marginsz, y+fontpixeloffset);
 		if(this.p0 < ln.off || this.p0 > ln.off + ln.txt.length) {
 			return true;
 		}
@@ -869,7 +868,7 @@ function DrawLines(c) {
 		// line with tick
 		var x = this.posdx(ln.txt, this.p0 - ln.off);
 		x += this.marginsz - Math.round(this.tscale/2);	// a bit to the left
-		this.tick(x, y+fontpixeloffset);
+		this.tick(x, y);
 		return true;
 	};
 
