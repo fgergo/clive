@@ -1,0 +1,23 @@
+# clone a full repo
+git clone https://github.com/fgergo/clive clive
+
+# set up alternative remote repo e.g. lsub
+git remote add lsub git://git.lsub.org/clive.git
+
+# pull from alternative lsub repo and then push to forked github repo
+git checkout master # checkout master
+git pull lsub master	# pull recent changes from lsub
+git push origin master	# push lsub changes to github repo
+
+# list remote branches in the cloned repo
+git branch -a
+
+# create and checkout a local branch to track remote branch
+git checkout -b minchrome origin/minchrome
+
+# list git remotes
+git remote -v
+
+# if 'origin' remote points to https://github.com/fgergo/clive, to push 'newfeature' branch to origin
+git checkout newfeature
+git push origin newfeature
