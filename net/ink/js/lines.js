@@ -13,18 +13,21 @@ var fontscheckedout = false;
 var tdebug = false;
 
 function checkoutfonts(ctx) {
-	if(fontscheckedout)
+	if(fontscheckedout) {
 		return;
+	}
 	fontscheckedout = true;
 	var old = ctx.font;
 	ctx.font = "50px Arial";
 	var sz = ctx.measureText("ABC").width;
 	ctx.font = "50px " + tffixed;
-	if(ctx.measureText("ABC").width == sz)
+	if(ctx.measureText("ABC").width == sz) {
 		tffixed = "Courier";
+	}
 	ctx.font = "50px " + tfvar;
-	if(ctx.measureText("ABC").width == sz)
+	if(ctx.measureText("ABC").width == sz) {
 		tffixed = "Arial";
+	}
 	ctx.font = old;
 }
 
@@ -72,7 +75,7 @@ function lparen(c) {
 function ctxClearRect(ctx, x, y, wid, ht) {
 	var ofs = ctx.fillStyle;
 	ctx.fillStyle = "#DDDDC8";
-	ctx.fillRect(x, y, wid, ht)
+	ctx.fillRect(x, y, wid, ht);
 	ctx.fillStyle = ofs;
 }
 
@@ -526,11 +529,11 @@ function Lines(els) {
 		if(p0 == p1 || p0 >= this.nrunes || p1 < p0 || p1 <= 0) {
 			return "";
 		}
-+		var ln0, lnoff, tmp;
-+		tmp = this.seek(p0);
-+		ln0 = tmp[0];
-+		lnoff = tmp[1];
-+		if(ln0 === null) {
+		var ln0, lnoff, tmp;
+		tmp = this.seek(p0);
+		ln0 = tmp[0];
+		lnoff = tmp[1];
+		if(ln0 === null) {
 			return "";
 		}
 		var ln = ln0;
