@@ -570,8 +570,10 @@ function Lines(els) {
 		if(longword) {
 			ischar = islongwordchar;
 		}
-		var ln, lnoff;
-		[ln, lnoff] = this.seek(pos);
+		var ln, lnoff, tmp;
+		tmp = this.seek(pos);
+		ln = tmp[0];
+		lnoff = tmp[1];
 		if(ln == null) {
 			ln = this.lne;
 		}
