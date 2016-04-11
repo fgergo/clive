@@ -1063,7 +1063,7 @@ function DrawLines(c) {
 		}
 		var ln = this.ln0;
 		nln--;
-		while(nln > 0 && ln.next) {
+		while(nln >= 0 && ln.next) {
 			ln = ln.next;
 			nln--;
 		}
