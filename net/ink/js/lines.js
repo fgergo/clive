@@ -621,7 +621,7 @@ function Lines(els) {
 					if(x == c) {
 						n++;
 					}
-					if(n == 0) {
+					if(n === 0) {
 						return [txt, pos, epos];
 					}
 					txt += x;
@@ -649,11 +649,11 @@ function Lines(els) {
 					else if(x == c) {
 						n++;
 					}
-					if(n != 0) {
+					if(n !== 0) {
 						pos--;
 						txt = x + txt;
 					}
-					if(n == 0) {
+					if(n === 0) {
 						return [txt, pos, epos];
 					}
 				}
@@ -665,7 +665,7 @@ function Lines(els) {
 						txt = "\n" + txt;
 					}
 				}
-			}while(n > 0 && ln != null);
+			}while(n > 0 && ln !== null);
 			return [txt, pos, epos];
 		}
 		if(!islongwordchar(c)) {
