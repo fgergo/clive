@@ -30,14 +30,16 @@ function checkoutfonts(ctx) {
 
 var wordre = null;
 function iswordchar(c) {
-	if(!wordre)
+	if(!wordre) {
 		wordre = /\w/;
+	}
 	return wordre.test(c);
 }
 
 function islongwordchar(c) {
-	if(!wordre)
+	if(!wordre) {
 		wordre = /\w/;
+	}
 	return c == '-' || c == '(' || c == ')' || c == '/' || c == '.' || c == ':' || c == '#' || c == ',' || wordre.test(c);
 }
 
@@ -51,15 +53,17 @@ function isrparen(c) {
 
 function rparen(c) {
 	var i = "([{<".indexOf(c);
-	if(i < 0)
+	if(i < 0) {
 		return c;
+	}
 	return ")]}>".charAt(i);
 }
 
 function lparen(c) {
 	var i = ")]}>".indexOf(c);
-	if(i < 0)
+	if(i < 0) {
 		return c;
+	}
 	return "([{<".charAt(i);
 }
 
@@ -165,8 +169,8 @@ function Line(lni, off, txt, eol) {
 	};
 
 	this.renumber = function() {
-		for(var ln = this; ln != null; ln = ln.next) {
-			if(ln.prev == null) {
+		for(var ln = this; ln !== null; ln = ln.next) {
+			if(ln.prev === null) {
 				ln.off = 0;
 				ln.lni = 0;
 			} else {
@@ -202,8 +206,9 @@ function Lines(els) {
 
 	// pos0 is optional (0 by default).
 	this.tabtxt = function(t, pos0) {
-		if(t.indexOf('\t') < 0)
+		if(t.indexOf('\t') < 0) {
 			return t;
+		}
 		var s = "";
 		var pos = 0;
 		if(pos0) {
@@ -276,7 +281,7 @@ function Lines(els) {
 				break;
 			}
 		}
-	}
+	};
 
 	this.addln = function(ln) {
 		ln.prev = this.lne;
@@ -297,10 +302,11 @@ function Lines(els) {
 	// seek a line (first is 0).
 	this.seekln = function(pos) {
 		var ln = this.lns;
-		for(var ln = this.lns; ln; ln = ln.next) {
-			if(pos-- <= 0) {
+		for(ln = this.lns; ln; ln = ln.next) {
+			if(pos <= 0) {
 				return ln;
 			}
+			pos--;
 		}
 		return this.lns;
 	};
@@ -319,7 +325,7 @@ function Lines(els) {
 
 	// return the pos for a seek
 	this.seekpos = function(ln, lnoff) {
-		if(ln == null) {
+		if(ln === null) {
 			return 0;
 		}
 		if(lnoff > ln.txt.length) {
@@ -340,9 +346,9 @@ function Lines(els) {
 		// TODO: should get an indication regarding at which
 		// point it's safe to assume that no further reformat
 		// work is needed and stop there.
-		for(var ln = ln0; ln != null; ) {
+		for(var ln = ln0; ln !== null; ) {
 			// merge text on the same line
-			while(!ln.eol && ln.next != null) {
+			while(!ln.eol && ln.next !== null) {
 				if(ln.next == this.lne) {
 					this.lne = ln;
 				}
@@ -353,7 +359,7 @@ function Lines(els) {
 			}
 			// remove empty lines but keep an empty line at the end.
 			var next = ln.next;
-			if(ln.len() == 0 && next) {
+			if(ln.len() === 0 && next) {
 				if(this.lne == ln) {
 					console.log("lines: reformat join bug?");
 				}
@@ -371,7 +377,7 @@ function Lines(els) {
 			ln = next;
 		}
 		// recompute wraps, offsets, and numbers.
-		for(var ln = ln0; ln != null; ln = ln.next) {
+		for(ln = ln0; ln !== null; ln = ln.next) {
 			if(!ln.prev) {
 				ln.off = 0;
 				ln.lni = 0;
@@ -411,8 +417,10 @@ function Lines(els) {
 	this.ins1 = function(t, dontscroll) {
 		this.untick();
 		this.markins(this.p0, t.length);
-		var xln, lnoff;
-		[xln, lnoff] = this.seek(this.p0);
+		var xln, lnoff, tmp;
+		tmp = this.seek(this.p0);
+		xln = tmp[0];
+		lnoff = tmp[1];
 		if(!xln) {
 			console.log("Lines.ins: no line for p0");
 			return;
@@ -467,8 +475,10 @@ function Lines(els) {
 			this.p0--;
 		}
 		this.markdel(this.p0, this.p1);
-		var xln, lnoff;
-		[xln, lnoff] = this.seek(this.p0);
+		var xln, lnoff, tmp;
+		tmp = this.seek(this.p0);
+		xln = tmp[0];
+		lnoff = tmp[1];
 		if(!xln) {
 			console.log("lines: del: no line");
 			return;
@@ -476,7 +486,7 @@ function Lines(els) {
 		var ndel = this.p1 - this.p0;
 		var tot = 0;
 		var xln0 = xln;
-		for(; tot < ndel && xln != null; xln = xln.next) {
+		for(; tot < ndel && xln !== null; xln = xln.next) {
 			if(tdebug && 0) {
 				console.log("lines del " + ndel + " loff " + lnoff + " " + xln.str());
 			}
@@ -485,7 +495,7 @@ function Lines(els) {
 				xln.eol = false;
 				nd++;
 			}
-			if(tot == 0 && nd == ndel && xln.eol) {
+			if(tot === 0 && nd == ndel && xln.eol) {
 				// del within a line; don't reformat; redraw it.
 				if(tdebug) {
 					console.log("single line del");
@@ -516,9 +526,11 @@ function Lines(els) {
 		if(p0 == p1 || p0 >= this.nrunes || p1 < p0 || p1 <= 0) {
 			return "";
 		}
-		var ln0, lnoff;
-		[ln0, lnoff] = this.seek(p0);
-		if(ln0 == null) {
++		var ln0, lnoff, tmp;
++		tmp = this.seek(p0);
++		ln0 = tmp[0];
++		lnoff = tmp[1];
++		if(ln0 === null) {
 			return "";
 		}
 		var ln = ln0;
@@ -539,7 +551,7 @@ function Lines(els) {
 			}
 			ln = ln.next;
 			off = 0;
-		}while(tot < nget && ln != null);
+		}while(tot < nget && ln !== null);
 		return txt;
 	};
 
