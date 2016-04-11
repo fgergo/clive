@@ -574,10 +574,10 @@ function Lines(els) {
 		tmp = this.seek(pos);
 		ln = tmp[0];
 		lnoff = tmp[1];
-		if(ln == null) {
+		if(ln === null) {
 			ln = this.lne;
 		}
-		if(ln == this.lne && ln.prev != null && ln.txt.length == 0) {
+		if(ln == this.lne && ln.prev !== null && ln.txt.length === 0) {
 			ln = ln.prev;
 			pos = ln.off;
 		}
@@ -585,7 +585,7 @@ function Lines(els) {
 		var p0 = pos - ln.off;
 		if(p0 == ln.txt.length){
 			var txt = ln.txt;
-			var off = ln.off
+			var off = ln.off;
 			for(var lnp = ln.prev; lnp && !lnp.eol; lnp = lnp.prev) {
 				txt = lnp.txt + txt;
 				off = lnp.off;
@@ -607,7 +607,7 @@ function Lines(els) {
 		if(islparen(c)){
 			pos++;
 			var rc = rparen(c);
-			var txt = "";
+			txt = "";
 			var n = 1;
 			p1++;
 			epos++;
@@ -615,12 +615,15 @@ function Lines(els) {
 				var x = 0;
 				for(; p1 < ln.txt.length; p1++, epos++) {
 					x = ln.txt.charAt(p1);
-					if(x == rc)
+					if(x == rc) {
 						n--;
-					if(x == c)
+					}
+					if(x == c) {
 						n++;
-					if(n == 0)
+					}
+					if(n == 0) {
 						return [txt, pos, epos];
+					}
 					txt += x;
 				}
 				if(ln.eol){
@@ -629,29 +632,33 @@ function Lines(els) {
 				}
 				ln = ln.next;
 				p1 = 0;
-			} while(ln != null);
+			} while(ln !== null);
 			return [txt, pos, epos];
 		}
 		if(isrparen(c)){
-			var n = 1;
+			n = 1;
 			var lc = lparen(c);
-			var txt = "";
+			txt = "";
 			do{
-				for(p0--; p0 >= 0; p0--){
+				p0--;
+				for(; p0 >= 0; p0--){
 					x = ln.txt.charAt(p0);
-					if(x == lc)
+					if(x == lc) {
 						n--;
-					else if(x == c)
+					}
+					else if(x == c) {
 						n++;
-					if(n != 0){
+					}
+					if(n != 0) {
 						pos--;
 						txt = x + txt;
 					}
-					if(n == 0)
+					if(n == 0) {
 						return [txt, pos, epos];
+					}
 				}
 				ln = ln.prev;
-				if(ln != null){
+				if(ln !== null){
 					p0 = ln.txt.length;
 					if(ln.eol){
 						pos--;
@@ -661,10 +668,11 @@ function Lines(els) {
 			}while(n > 0 && ln != null);
 			return [txt, pos, epos];
 		}
-		if(!islongwordchar(c))
+		if(!islongwordchar(c)) {
 			return [ln.txt.slice(p0, p1), pos, epos];
-		var txt = ln.txt;
-		for(var lnp = ln.prev; lnp && !lnp.eol; lnp = lnp.prev) {
+		}
+		txt = ln.txt;
+		for(lnp = ln.prev; lnp && !lnp.eol; lnp = lnp.prev) {
 			txt = lnp.txt + txt;
 			p0 += lnp.txt.length;
 			p1 += lnp.txt.length;
@@ -801,7 +809,9 @@ function DrawLines(c) {
 
 	this.tick = function(x, y) {
 		var ctx = this.ctx;
-		if(0)console.log("tick", x, y);
+		if(0) {
+			console.log("tick", x, y);
+		}
 		this.saved = ctx.getImageData(x, y, 3*this.tscale, this.fontht);
 		this.tickx = x;
 		this.ticky = y;
@@ -841,8 +851,9 @@ function DrawLines(c) {
 			}
 			// from p0 to p1 selected
 			var s1 = ln.txt.length - s0;
-			if(this.p1 < ln.off+ln.txt.length)
+			if(this.p1 < ln.off+ln.txt.length) {
 				s1 = this.p1 - s0 - ln.off;
+			}
 			var s1t = this.tabtxt(ln.txt.slice(s0, s0+s1), s0pos);
 			var s1pos = s0pos + s1t.length;
 			var sx = ctx.measureText(s1t).width;
@@ -876,7 +887,7 @@ function DrawLines(c) {
 
 		// unselected line
 		ctxClearRect(ctx, 1, y, this.c.width-this.marginsz-1, lnht);
-		var t = this.tabtxt(ln.txt);
+		t = this.tabtxt(ln.txt);
 		ctxFillText(ctx, t, this.marginsz, y);
 
 		if(this.p0 < ln.off || this.p0 > ln.off + ln.txt.length) {
@@ -919,9 +930,10 @@ function DrawLines(c) {
 		this.frlines = 0;
 		var ln = this.ln0;
 		for(var i = 0; i <= this.nlines; i++){
-			if(ln != null){
-				if(!this.drawline(ln))
+			if(ln !== null) {
+				if(!this.drawline(ln)) {
 					break;
+				}
 				this.frlines++;
 				this.frsize += ln.len();
 				ln = ln.next;
@@ -929,7 +941,9 @@ function DrawLines(c) {
 					break;
 			}
 		}
-		if(tdebug)console.log("redraw " + i + " " + this.nlines);
+		if(tdebug) {
+			console.log("redraw " + i + " " + this.nlines);
+		}
 		this.updatescrl();
 	};
 
@@ -1048,15 +1062,18 @@ function DrawLines(c) {
 			return [this.lne, this.lne.txt.length, true];
 		}
 		var ln = this.ln0;
-		while(nln-- > 0 && ln.next) {
+		nln--;
+		while(nln > 0 && ln.next) {
 			ln = ln.next;
+			nln--;
 		}
 		var pos = 0;
 		for(; pos <= ln.txt.length; pos++){
 			var coff = this.posdx(ln.txt, pos);
 			if(coff+marginsz > x){
-				if(pos > 0)
+				if(pos > 0) {
 					pos--;
+				}
 				break;
 			}
 		}
@@ -1071,7 +1088,7 @@ function DrawLines(c) {
 		if(this.p0 >= this.ln0.off && this.p0 <= this.ln0.off+this.frsize) {
 			return;
 		}
-		for(var ln = this.lns; ln != null; ln = ln.next) {
+		for(var ln = this.lns; ln !== null; ln = ln.next) {
 			if(this.p0 >= ln.off && this.p0 <= ln.off+ln.txt.length) {
 				for(var n = Math.floor(this.frlines/3); n > 0 && ln.prev; n--) {
 					ln = ln.prev;
@@ -1098,8 +1115,9 @@ function DrawLines(c) {
 			refreshall = true;
 		}
 		var froff = this.ln0.off;
-		if(refreshall && (this.p1 <froff || this.p0 >froff+this.frsize))
+		if(refreshall && (this.p1 <froff || this.p0 >froff+this.frsize)) {
 			refreshall = false;
+		}
 		var mp0 = p0;
 		var mp1 = p1;
 		if(refreshall){
@@ -1118,7 +1136,7 @@ function DrawLines(c) {
 		}
 		var insel = false;
 		var ln = this.ln0;
-		for(var i = 0; i < this.frlines && ln != null; i++){
+		for(var i = 0; i < this.frlines && ln !== null; i++){
 			if(mp1 >= ln.off && mp0 <= ln.off+ln.txt.length) {
 				insel=true;
 			}
