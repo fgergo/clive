@@ -559,7 +559,7 @@ function Lines(els) {
 	};
 
 	// returns [word, wp0, wp1]
-	this.getword = function(pos, long) {
+	this.getword = function(pos, longword) {
 		if(pos < 0) {
 			return ["", 0, 0];
 		}
@@ -567,7 +567,7 @@ function Lines(els) {
 			return ["", this.nrunes, this.nrunes];
 		}
 		var ischar = iswordchar;
-		if(long) {
+		if(longword) {
 			ischar = islongwordchar;
 		}
 		var ln, lnoff;
