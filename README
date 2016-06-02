@@ -73,9 +73,6 @@ go install -v ./...
 echo $GOROOT	# yes, check $GOROOT and set if needed. Details: see above
 echo $GOPATH		# yes, check $GOPATH and set if needed. Details: see above
 export PATH=$GOPATH/bin:$PATH
-# create directories
-sudo mkdir -p /zx/lib			# run as root
-sudo chown -R `whoami`:`whoami` /zx
 # create temporary certs
 cd $HOME/.ssh
 # create ~/.ssh/server.[pem|key]
@@ -88,16 +85,19 @@ openssl req -new -nodes -x509 -out client.pem \
         -keyout client.key -days 500 -subj \
         "/C=DE/ST=NRW/L=Earth/O=Random \
         Company/OU=IT/CN=lsub.org/emailAddress=dont@mail.me"
-# create /zx/lib/webcert.[pem|key]
+# create passwords
+auth -f default `whoami` secret1	# yes, change this: secret1 will be the password for the  'default' domain
+auth -f wax `whoami` secret2 	# yes, change this: secret2 will be the password for the 'wax' domain used by the graphical shell ix
+chmod 600 server.pem server.key client.pem client.key clive.default clive.wax
+# create directories
+sudo mkdir -p /zx/lib			# run as root
+sudo chown -R `whoami`:`whoami` /zx
+# create temporary /zx/lib/webcert.[pem|key]
 cd /zx/lib
 openssl req -new -nodes -x509 -out webcert.pem \
         -keyout webcert.key -days 500 -subj \
         "/C=DE/ST=NRW/L=Earth/O=Random \
         Company/OU=IT/CN=lsub.org/emailAddress=dont@mail.me"
-# create passwords
-auth -f default `whoami` secret1	# yes, change this: secret1 will be the password for the  'default' domain
-auth -f wax `whoami` secret2 	# yes, change this: secret2 will be the password for the 'was' domain used by the graphical shell ix
-chmod 600 server.pem server.key client.pem client.key clive.default clive.wax
 
 # Running clive programs
 
@@ -107,7 +107,7 @@ web -l	# should start without any output
 
 # run the graphical shell ix
 ix	# should start without any output
-Your browser on https://ip_of_machine_running_clive:8181 and accept the security exception and you should see the default ix screen something like this: http://lsub.org/export/inkdump.png
+# your browser: https://ip_of_machine_running_clive:8181 and accept the security exception and you should see the default ix screen something like this: http://lsub.org/export/inkdump.png
 
 # ix manual page: http://lsub.org/sys/man/1/ix.html
 
