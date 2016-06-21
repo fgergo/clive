@@ -24,6 +24,8 @@ import (
 	"clive/dbg"
 	"clive/u"
 	"clive/x/code.google.com/p/go.crypto/pbkdf2"
+	"clive/x/github.com/pquerna/otp"
+	"clive/x/github.com/pquerna/otp/totp"
 	"crypto/aes"
 	"crypto/cipher"
 	crand "crypto/rand"
@@ -37,6 +39,7 @@ import (
 	"math/rand"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -763,4 +766,28 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func TotpOk(name, code, timestamp string) (user string, ok bool) {
+	ts, err := strconv.Atoi(timestamp)
+	if err != nil {
+		return "", false
+	}
+
+	valid, _ := totp.ValidateCustom(
+		code,
+		"DJAOV2KHYQE6CMA4",
+		time.Unix(int64(ts), 0),
+		totp.ValidateOpts{
+			Period: 30,
+			Skew: 1,
+			Digits: otp.DigitsSix,
+			Algorithm: otp.AlgorithmSHA1,
+		},
+	)
+	if !valid {
+		return "", false
+	}
+
+	return "notready", valid
 }

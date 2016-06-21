@@ -38,10 +38,6 @@ func checkOrigin(config *websocket.Config, req *http.Request) (err error) {
 	return err
 }
 
-func TotpOk(name, code, timestamp string) (user string, ok bool) {
-	return "notready", true
-}
-
 // Authenticate a websocket before servicing it.
 func AuthWebSocketHandler(h websocket.Handler) http.HandlerFunc {
 	hndler := func(w http.ResponseWriter, r *http.Request) {
@@ -60,7 +56,7 @@ func AuthWebSocketHandler(h websocket.Handler) http.HandlerFunc {
 					http.Error(w, "auth failed", 403)
 					return
 				}
-				u, ok := TotpOk("wax", toks[1], toks[2])
+				u, ok := auth.TotpOk("wax", toks[1], toks[2])
 				if !ok {
 					cmd.Warn("wax/totp authws: failed for %s", u)
 					http.Error(w, "auth failed", 403)
@@ -109,7 +105,7 @@ func AuthHandler(fn http.HandlerFunc) http.HandlerFunc {
 				authFailed(w, r)
 				return
 			}
-			u, ok := TotpOk("wax", toks[1], toks[2])
+			u, ok := auth.TotpOk("wax", toks[1], toks[2])
 			if !ok {
 				cmd.Warn("wax/totp auth: failed for %s", u)
 				authFailed(w, r)
@@ -176,10 +172,9 @@ func serveLoginFor(proceedto string) {
 		$(function(){
 			$("#dialog_totp").on('submit', function(e) {
 				var totp_code = $("#pass_totp").val();
-				var totp_timestamp = Math.round((new Date()).getTime()/1000)
+				var totp_timestamp = Math.round((new Date()).getTime()/1000);
 				var c =  "clive=totp:" + totp_code + ":" + totp_timestamp + ";secure=secure";
 				document.cookie = c;
-				alert(c);
 				clive = c;
 				window.location = "` + proceedto + `";
 				return false;
