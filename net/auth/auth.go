@@ -36,6 +36,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"math/rand"
 	"os"
 	"path"
@@ -774,9 +775,10 @@ func TotpOk(name, code, timestamp string) (user string, ok bool) {
 		return "", false
 	}
 
+	secret, err := ioutil.ReadFile(KeyDir() + "/clive.totp")
 	valid, _ := totp.ValidateCustom(
 		code,
-		"DJAOV2KHYQE6CMA4",
+		string(secret),
 		time.Unix(int64(ts), 0),
 		totp.ValidateOpts{
 			Period: 30,
@@ -789,5 +791,25 @@ func TotpOk(name, code, timestamp string) (user string, ok bool) {
 		return "", false
 	}
 
-	return "notready", valid
+	return "pi", valid
+
+/*	usr := u.Uid
+	if !Enabled {
+		return usr, true
+	}
+	if name != "" && name != "default" {
+		var err error
+		ks, err := LoadKey(KeyDir(), name)
+		if err != nil {
+			dbg.Warn("auth: loadkey %s: %s", name, err)
+			return usr, false
+		}
+		usr, key = ks[0].Uid, ks[0].Key
+	}
+	chresp, ok := encrypt(key, iv, []byte(ch))
+	if !ok || len(chresp) == 0 {
+		return usr, false
+	}
+	return usr, fmt.Sprintf("%x", chresp) == resp
+*/
 }

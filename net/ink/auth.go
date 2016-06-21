@@ -175,6 +175,7 @@ func serveLoginFor(proceedto string) {
 				var totp_timestamp = Math.round((new Date()).getTime()/1000);
 				var c =  "clive=totp:" + totp_code + ":" + totp_timestamp + ";secure=secure";
 				document.cookie = c;
+				alert(c);
 				clive = c;
 				window.location = "` + proceedto + `";
 				return false;
