@@ -38,6 +38,10 @@ func checkOrigin(config *websocket.Config, req *http.Request) (err error) {
 	return err
 }
 
+func TotpOk(name, code, timestamp string) (user string, ok bool) {
+	return "notready", true
+}
+
 // Authenticate a websocket before servicing it.
 func AuthWebSocketHandler(h websocket.Handler) http.HandlerFunc {
 	hndler := func(w http.ResponseWriter, r *http.Request) {
@@ -48,16 +52,31 @@ func AuthWebSocketHandler(h websocket.Handler) http.HandlerFunc {
 				http.Error(w, "auth failed", 403)
 				return
 			}
-			toks := strings.SplitN(string(clive.Value), ":", 2)
-			if len(toks) < 2 {
-				cmd.Warn("wax/auth: wrong cookie")
-				http.Error(w, "auth failed", 403)
-				return
-			}
-			ch, resp := toks[0], toks[1]
-			u, ok := auth.ChallengeResponseOk("wax", ch, resp)
-			if !ok {
-				cmd.Warn("wax/auth: failed for %s", u)
+			toks := strings.SplitN(string(clive.Value), ":", 3)
+			switch len(toks) {
+			case 3:	// time-based one-time password auth token
+				if toks[0] != "totp" {
+					cmd.Warn("wax/totp authws: wrong cookie, not totp")
+					http.Error(w, "auth failed", 403)
+					return
+				}
+				u, ok := TotpOk("wax", toks[1], toks[2])
+				if !ok {
+					cmd.Warn("wax/totp authws: failed for %s", u)
+					http.Error(w, "auth failed", 403)
+					return
+				}
+				cmd.Warn("totp ok");
+			case 2:	// challenge-response auth token
+				ch, resp := toks[0], toks[1]
+				u, ok := auth.ChallengeResponseOk("wax", ch, resp)
+				if !ok {
+					cmd.Warn("wax/authws: failed for %s", u)
+					http.Error(w, "auth failed", 403)
+					return
+				}
+			default:	// unknown auth token
+				cmd.Warn("wax/authws: wrong cookie")
 				http.Error(w, "auth failed", 403)
 				return
 			}
@@ -82,19 +101,35 @@ func AuthHandler(fn http.HandlerFunc) http.HandlerFunc {
 			authFailed(w, r)
 			return
 		}
-		toks := strings.SplitN(string(clive.Value), ":", 2)
-		if len(toks) < 2 {
+		toks := strings.SplitN(string(clive.Value), ":", 3)
+		switch len(toks) {
+		case 3:	// time-based one-time password auth token
+			if toks[0] != "totp" {
+				cmd.Warn("wax/totp auth: wrong cookie, not totp")
+				authFailed(w, r)
+				return
+			}
+			u, ok := TotpOk("wax", toks[1], toks[2])
+			if !ok {
+				cmd.Warn("wax/totp auth: failed for %s", u)
+				authFailed(w, r)
+				return
+			}
+			cmd.Warn("totp ok");
+		case 2:	// challenge-response auth token
+			ch, resp := toks[0], toks[1]
+			u, ok := auth.ChallengeResponseOk("wax", ch, resp)
+			if !ok {
+				cmd.Warn("wax/auth: failed for %s", u)
+				authFailed(w, r)
+				return
+			}
+		default:	// unknown auth token
 			cmd.Warn("wax/auth: wrong cookie")
 			authFailed(w, r)
 			return
 		}
-		ch, resp := toks[0], toks[1]
-		u, ok := auth.ChallengeResponseOk("wax", ch, resp)
-		if !ok {
-			cmd.Warn("wax/auth: failed for %s", u)
-			authFailed(w, r)
-			return
-		}
+
 		// TODO: We should decorate r adding the user id to
 		// the url as a query, so fn can inspect the query and
 		// know which user did auth.
@@ -137,14 +172,33 @@ func serveLoginFor(proceedto string) {
 				return false;
 			});
 		})
+
+		$(function(){
+			$("#dialog_totp").on('submit', function(e) {
+				var totp_code = $("#pass_totp").val();
+				var totp_timestamp = Date();
+				var c =  "clive=totp:" + totp_code + ":" + totp_timestamp + ";secure=secure";
+				document.cookie = c;
+				alert(c);
+				clive = c;
+				window.location = "` + proceedto + `";
+				return false;
+			});
+		})
+
 		if(window.location.protocol !== "https:") {
 			window.location = "` + proceedto + `";
 		}
 		</script>
-		<p><center><b><tt>
-		<form name="form" id="dialog" action="" method="get" >
+		<p><center><tt>
+		<b><form name="form" id="dialog" action="" method="get" >
 			<label for="box">Clive ink password: </label>
-			<input name="box" id="pass" type="password"/ ></form></tt></b></center>
+			<input name="box" id="pass" type="password"/ ></form></b>
+		<p>or use totp (time-based one-time password)</p>
+		<b><form name="form_totp" id="dialog_totp" action="" method="get" >
+			<label for="box_totp">6 digit code: </label>
+			<input name="box_totp" id="pass_totp"/ ></form></b>
+			<p>or <a href="/login">set up</a> totp.</tt></center>
 `
 		fmt.Fprintf(w, "%s\n<p>\n", js)
 		fmt.Fprintf(w, `<img src="http://lsub.org/clive.gif"  alt="" style="position:fixed; top:0; left:0; z-index:-1; width:100px;">
