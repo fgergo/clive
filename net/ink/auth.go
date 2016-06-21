@@ -176,7 +176,7 @@ func serveLoginFor(proceedto string) {
 		$(function(){
 			$("#dialog_totp").on('submit', function(e) {
 				var totp_code = $("#pass_totp").val();
-				var totp_timestamp = Date();
+				var totp_timestamp = Math.round((new Date()).getTime()/1000)
 				var c =  "clive=totp:" + totp_code + ":" + totp_timestamp + ";secure=secure";
 				document.cookie = c;
 				alert(c);
