@@ -62,7 +62,6 @@ func AuthWebSocketHandler(h websocket.Handler) http.HandlerFunc {
 					http.Error(w, "auth failed", 403)
 					return
 				}
-				cmd.Warn("totp ok");
 			case 2:	// challenge-response auth token
 				ch, resp := toks[0], toks[1]
 				u, ok := auth.ChallengeResponseOk("wax", ch, resp)
@@ -111,7 +110,6 @@ func AuthHandler(fn http.HandlerFunc) http.HandlerFunc {
 				authFailed(w, r)
 				return
 			}
-			cmd.Warn("totp ok");
 		case 2:	// challenge-response auth token
 			ch, resp := toks[0], toks[1]
 			u, ok := auth.ChallengeResponseOk("wax", ch, resp)
