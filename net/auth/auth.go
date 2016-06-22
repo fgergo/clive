@@ -729,6 +729,55 @@ func encrypt(k, iv, in []byte) ([]byte, bool) {
 	return in, true
 }
 
+/*
+	TotpOk() checks if the supplied time-based one-time passcode is valid.
+	Returns the user who authenticates and the status for authentication.
+	Always returns true when Auth is not enabled.
+	TODO:
+		1. talk to nemo: at the moment authentication domain is ignored
+		2. ask nemo about changing clive.totp file name to clive.totp.<domain>,
+		to be more similar to ChallengeResponseOk()
+*/
+func TotpOk(name, passcode, timestamp string) (string, bool) {
+	usr := u.Uid
+	if !Enabled {
+		return usr, true
+	}
+
+	ts, err := strconv.Atoi(timestamp)
+	if err != nil {
+		return usr, false
+	}
+
+	secret, err := ioutil.ReadFile(KeyDir() + "/clive.totp")
+	if err != nil {
+		return usr, false
+	}
+	valid, _ := totp.ValidateCustom(
+		passcode,
+		string(secret),
+		time.Unix(int64(ts), 0),
+		totp.ValidateOpts{
+			Period: 30,
+			Skew: 1,
+			Digits: otp.DigitsSix,
+			Algorithm: otp.AlgorithmSHA1,
+		},
+	)
+	return usr, valid
+}
+
+/*
+	TotpInvalidateSecret() kills totp authentication, until next cmd/totpinit.
+	Useful if the browser machine was most probably not secure.
+	TODO: not used at the moment, though should be
+	probably clickable from /logout page.
+*/
+func TotpInvalidateSecret() error {
+	message := fmt.Sprintf("invalid totp secret since %v", time.Now())
+	return ioutil.WriteFile(KeyDir() + "/clive.totp", []byte(message), 0600)
+}
+
 func init() {
 	dir := KeyDir()
 	cli := path.Join(dir, "client")
@@ -767,49 +816,4 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-}
-
-func TotpOk(name, code, timestamp string) (user string, ok bool) {
-	ts, err := strconv.Atoi(timestamp)
-	if err != nil {
-		return "", false
-	}
-
-	secret, err := ioutil.ReadFile(KeyDir() + "/clive.totp")
-	valid, _ := totp.ValidateCustom(
-		code,
-		string(secret),
-		time.Unix(int64(ts), 0),
-		totp.ValidateOpts{
-			Period: 30,
-			Skew: 1,
-			Digits: otp.DigitsSix,
-			Algorithm: otp.AlgorithmSHA1,
-		},
-	)
-	if !valid {
-		return "", false
-	}
-
-	return "pi", valid
-
-/*	usr := u.Uid
-	if !Enabled {
-		return usr, true
-	}
-	if name != "" && name != "default" {
-		var err error
-		ks, err := LoadKey(KeyDir(), name)
-		if err != nil {
-			dbg.Warn("auth: loadkey %s: %s", name, err)
-			return usr, false
-		}
-		usr, key = ks[0].Uid, ks[0].Key
-	}
-	chresp, ok := encrypt(key, iv, []byte(ch))
-	if !ok || len(chresp) == 0 {
-		return usr, false
-	}
-	return usr, fmt.Sprintf("%x", chresp) == resp
-*/
 }

@@ -44,7 +44,7 @@ func AuthWebSocketHandler(h websocket.Handler) http.HandlerFunc {
 		if auth.TLSserver != nil && auth.Enabled {
 			clive, err := r.Cookie("clive")
 			if err != nil {
-				cmd.Warn("wax/auth: no cookie: %s", err)
+				cmd.Warn("wax/authws: no cookie: %s", err)
 				http.Error(w, "auth failed", 403)
 				return
 			}
@@ -175,7 +175,6 @@ func serveLoginFor(proceedto string) {
 				var totp_timestamp = Math.round((new Date()).getTime()/1000);
 				var c =  "clive=totp:" + totp_code + ":" + totp_timestamp + ";secure=secure";
 				document.cookie = c;
-				alert(c);
 				clive = c;
 				window.location = "` + proceedto + `";
 				return false;
