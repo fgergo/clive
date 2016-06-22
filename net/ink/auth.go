@@ -191,7 +191,7 @@ func serveLoginFor(proceedto string) {
 		<b><form name="form_totp" id="dialog_totp" action="" method="get" >
 			<label for="box_totp">6 digit code: </label>
 			<input name="box_totp" id="pass_totp"/ ></form></b>
-			<p>or <a href="/login">set up</a> totp.</tt></center>
+		</tt></center>
 `
 		fmt.Fprintf(w, "%s\n<p>\n", js)
 		fmt.Fprintf(w, `<img src="http://lsub.org/clive.gif"  alt="" style="position:fixed; top:0; left:0; z-index:-1; width:100px;">
