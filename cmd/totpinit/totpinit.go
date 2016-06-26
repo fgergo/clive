@@ -1,13 +1,16 @@
-// totpinit initializes a shared secret for time-based one-time password authentication
-// usage:
-// ./totpinit
-// or
-// ./totpinit -account ix@clive -issuer lsub.org # or change account, issuer as you see fit, they are not checked
-// then point your browser to http://clivemachine:8181/secret to view shared secret as QR code
-// then point your totp app (e.g. google authenticator app on your phone) at the QR code picture in your browser
-// then enter 6 digit passcode on the command line for totpinit
-// TODO: functionality should probably be moved to cmd/auth/auth.go, ask nemo
+// cmd/totpinit initializes a shared secret for time-based one-time password authentication.
+//
+// usage: ./totpinit	# defaults to ./totpinit -account ix@clive -issuer lsub.org
+//
+// Then point your browser to http://clivemachine:8181/secret to view shared secret as QR code.
+//
+// Then point your totp app (e.g. google authenticator app on your phone) at the QR code picture in your browser.
+// 
+// Then enter 6 digit passcode on the command line for totpinit.
+//
+// Note: neither -account nor -issuer are checked by any program.
 package main
+// TODO: functionality should probably be moved to cmd/auth/auth.go, ask nemo
 
 import (
 	"clive/x/github.com/pquerna/otp/totp"
