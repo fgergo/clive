@@ -53,14 +53,14 @@ function setfocus(e) {
 	var pmax = p.find(".portlet-max");
 	if(oldfocus) {
 		try {
-			oldfocus.closest(".portlet-header").css('background-color', '#CC6600');
+			oldfocus.closest(".portlet-header").css('background-color', '#ee5500');
 		}catch(ex) {
 			console.log("setfocus", ex);
 		}
 	}
 	var hdr = pmax.closest(".portlet-header");
 	if(pgdebug)console.log("pg hdr ", hdr);
-	hdr.css('background-color', '#EE8800');
+	hdr.css('background-color', '#ffbb00');
 	oldfocus = pmax;
 }
 

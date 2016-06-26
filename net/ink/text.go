@@ -104,7 +104,7 @@ func (t *Txt) WriteTo(w io.Writer) (tot int64, err error) {
 	n, err := io.WriteString(w, `
 		<div id="`+vid+`" class="`+t.Id+` ui-widget-content", `+
 		`tabindex="1" style="border:2px solid black; `+
-		`margin:0; width:100%;height:300; background-color:#dfdfca">`)
+		`margin:0; width:100%; height: 300px; background-color:#dfdfca">`)
 	tot += int64(n)
 	if err != nil {
 		return tot, err
@@ -122,7 +122,7 @@ func (t *Txt) WriteTo(w io.Writer) (tot int64, err error) {
 	}
 	wsaddr := `wss://localhost:` + servePort
 	n, err = io.WriteString(w, `
-<canvas id="`+vid+`c" class="`+t.Id+`c" width="100%" height="100%" style="border:1px;"></canvas>
+<canvas id="`+vid+`c" class="`+t.Id+`c" width="100%" height="100%" style="border: 2px; "></canvas>
 </div>
 <script>
 	$(function(){

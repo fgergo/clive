@@ -246,7 +246,7 @@ func NewColsPg(path string, cols ...[]face{}) *Pg {
 		.column {width: `+strconv.Itoa(pcent)+`%;  float: left; padding-bottom: 10px; padding-right: 5px; padding-left: 5px;}
 		.portlet { margin: 0 0 0 0; padding: 0.2em; background-color: #fcfce7;}
 		.portlet-header { padding: 0.1em 0.1em; margin-bottom: 0.5em; 
-			position: relative; background-color: #CC6600}
+			position: relative; background-color: #ee5500;}
 		.portlet-toggle { position: absolute; top: 50%; right: 0; margin-top: -8px; }
 		.portlet-content { padding: 0.1em; }
 		.portlet-placeholder { border: 1px dotted black; margin: 0 1em 1em 0; height: 30px; }
