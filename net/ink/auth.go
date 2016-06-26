@@ -30,6 +30,11 @@ func authFailed(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s\n", outs)
 }
 
+func disableTotp(w http.ResponseWriter, r *http.Request) {
+	_ = auth.TotpInvalidateSecret()
+	authFailed(w, r)
+}
+
 func checkOrigin(config *websocket.Config, req *http.Request) (err error) {
 	config.Origin, err = websocket.Origin(config, req)
 	if err == nil && config.Origin == nil {
@@ -135,6 +140,7 @@ func AuthHandler(fn http.HandlerFunc) http.HandlerFunc {
 // after each login.
 func serveLoginFor(proceedto string) {
 	http.HandleFunc("/logout", authFailed)
+	http.HandleFunc("/logoutDisableTotp", disableTotp)
 
 	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
 		vals := r.URL.Query()
@@ -191,6 +197,8 @@ func serveLoginFor(proceedto string) {
 		<b><form name="form_totp" id="dialog_totp" action="" method="get" >
 			<label for="box_totp">6 digit code: </label>
 			<input name="box_totp" id="pass_totp"/ ></form></b>
+		<p>or initialize totp from command line: totpinit</p>
+		<p>or <a href="/logoutDisableTotp">disable totp authentication</a> until next totpinit.</p>
 		</tt></center>
 `
 		fmt.Fprintf(w, "%s\n<p>\n", js)
