@@ -3,6 +3,7 @@ package zx
 import (
 	"fmt"
 	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -39,6 +40,13 @@ func HasPrefix(p, pref string) bool {
 		return false
 	}
 	return pref == "/" || len(p) == len(pref) || p[len(pref)] == '/'
+}
+
+// Make a path starting with / for elems
+func Path(elems ...string) string {
+	s := strings.Join(elems, "/")
+	s = "/" + s
+	return path.Clean(s)
 }
 
 // Return the suffix of p relative to base
@@ -78,7 +86,7 @@ func Suffix(p, pref string) string {
 	}
 }
 
-// returns <0, 0, >0 if the path a is found before, at or after b
+// returns -1,0, or 1 if the path a is found before, at or after b
 // like string compare but operates on one element at a time to compare.
 func PathCmp(path0, path1 string) int {
 	els0 := Elems(path0)
@@ -98,4 +106,43 @@ func PathCmp(path0, path1 string) int {
 		return 1
 	}
 	return 0
+}
+
+// Match expr against any element name if it's not /...
+// or match it against any prefix of p
+func PathPrefixMatch(p, exp string) bool {
+	els := Elems(exp)
+	pels := Elems(p)
+	if len(els) == 0 {
+		return true
+	}
+	if len(pels) < len(els) {
+		return false
+	}
+	var m bool
+	var err error
+	n := len(els)
+	if exp[0] != '/' {
+		n = len(pels)
+	}
+	for i := 0; i < n; i++ {
+		if exp[0] == '/' {
+			m, err = filepath.Match(els[i], pels[i])
+			if err != nil {
+				return false
+			}
+			if !m {
+				return false
+			}
+		} else {
+			m, err = filepath.Match(exp, pels[i])
+			if err != nil {
+				return false
+			}
+			if m {
+				return true
+			}
+		}
+	}
+	return exp[0] == '/'
 }

@@ -12,6 +12,8 @@ type Kind int
 const (
 	Knone  Kind = iota
 	Ktitle      // title or author info (first found is title)
+	Kcop        // copyright info
+	Kchap       // chapter title
 	Khdr1       // heading
 	Khdr2       // heading
 	Khdr3       // heading
@@ -29,10 +31,12 @@ const (
 	Ksh         // verbatim shell output
 	Kfig        // figure
 	Kpic        // inlined pic figure
+	Kgrap       // inlined plot
 	Ktbl        // table
 	Keqn        // equation
 	Kcode       // code excerpts
 	Ktext       // text
+	Kfoot       // footnote
 
 	Kindent      // relative indent
 	Kitemize     // indented list of items
@@ -43,6 +47,7 @@ const (
 	Kfref        // to a fig
 	Ktref        // to a tbl
 	Keref        // to a eqn
+	Knref        // to a footnote
 	Kcref        // to a listing
 	Kurl         // link
 	Kbib         // wr/refs citation(s)
@@ -52,12 +57,15 @@ const (
 
 const (
 	// these require a space after
+	CopMark   = "© "
 	TitleMark = "_ "
+	ChapMark  = "= "
 	Hdr1Mark  = "* "
 	Hdr2Mark  = "** "
 	Hdr3Mark  = "*** "
 	ItemMark  = "- "
 	EnumMark  = "# "
+	FootMark  = "! "
 
 	// these don't require a space after
 	VerbMark = "[verb"
@@ -66,6 +74,7 @@ const (
 	RcMark   = "[rc"
 	FigMark  = "[fig"
 	PicMark  = "[pic"
+	GrapMark = "[grap"
 	TblMark  = "[tbl"
 	EqnMark  = "[eqn"
 	CodeMark = "[code"
@@ -84,7 +93,7 @@ struct Text {
 	bibrefs []string
 	refsdir string
 
-	nhdr1, nhdr2, nhdr3 int
+	nchap, nhdr1, nhdr2, nhdr3 int
 
 	itset, ttset, bfset bool
 
@@ -121,6 +130,9 @@ struct scan {
 
 var marks = map[string]Kind{
 	TitleMark: Ktitle,
+	CopMark:   Kcop,
+	FootMark:  Kfoot,
+	ChapMark:  Kchap,
 	Hdr1Mark:  Khdr1,
 	Hdr2Mark:  Khdr2,
 	Hdr3Mark:  Khdr3,
@@ -132,6 +144,7 @@ var marks = map[string]Kind{
 	VerbMark:  Kverb,
 	FigMark:   Kfig,
 	PicMark:   Kpic,
+	GrapMark:  Kgrap,
 	TblMark:   Ktbl,
 	EqnMark:   Keqn,
 	CodeMark:  Kcode,
@@ -143,6 +156,10 @@ func (k Kind) String() string {
 		return "none"
 	case Ktitle:
 		return "title"
+	case Kcop:
+		return "cop"
+	case Kchap:
+		return "chapter"
 	case Khdr1:
 		return "hdr1"
 	case Khdr2:
@@ -177,6 +194,8 @@ func (k Kind) String() string {
 		return "fig"
 	case Kpic:
 		return "pic"
+	case Kgrap:
+		return "grap"
 	case Ktbl:
 		return "tbl"
 	case Keqn:
@@ -185,6 +204,8 @@ func (k Kind) String() string {
 		return "code"
 	case Ktext:
 		return "text"
+	case Kfoot:
+		return "foot"
 	case Kindent:
 		return "indent"
 	case Kitemize:
@@ -203,6 +224,8 @@ func (k Kind) String() string {
 		return "tref"
 	case Keref:
 		return "eref"
+	case Knref:
+		return "nref"
 	case Kcref:
 		return "cref"
 	case Kbib:
@@ -220,9 +243,10 @@ func (k Kind) String() string {
 
 func (k Kind) HasData() bool {
 	switch k {
-	case Ktitle, Khdr1, Khdr2, Khdr3,
-		Kcite, Kbib, Kurl, Ksref, Kfref, Ktref, Keref, Kcref,
-		Kverb, Ksh, Kfig, Kpic, Ktbl, Keqn, Kcode, Ktext, Kfont, Kitem, Kenum, Kname:
+	case Ktitle, Kcop, Kchap, Khdr1, Khdr2, Khdr3,
+		Kcite, Kbib, Kurl, Ksref, Kfref, Ktref, Keref, Knref, Kcref,
+		Kverb, Ksh, Kfig, Kpic, Kgrap,
+		Ktbl, Keqn, Kcode, Ktext, Kfoot, Kfont, Kitem, Kenum, Kname:
 		return true
 	default:
 		return false
@@ -232,7 +256,7 @@ func (k Kind) HasData() bool {
 func (k Kind) HasChild() bool {
 	switch k {
 	case Kindent, Kitemize, Kenumeration, Kdescription, Kname,
-		Ktext, Kenum, Kitem, Khdr1, Ktitle, Khdr2, Khdr3:
+		Ktext, Kfoot, Kenum, Kitem, Kchap, Khdr1, Ktitle, Kcop, Khdr2, Khdr3:
 		return true
 	default:
 		return false

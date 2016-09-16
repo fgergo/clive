@@ -70,6 +70,23 @@ function lparen(c) {
 	return "([{<".charAt(i);
 }
 
+// Using ctx.clearRect(x, y, w, h) has problems in Chrome.
+// This seems to work.
+function ctxClearRect(ctx, x, y, wid, ht) {
+	var ofs = ctx.fillStyle;
+	ctx.fillStyle = "#DDDDC8";
+	ctx.fillRect(x, y, wid, ht)
+	ctx.fillStyle = ofs;
+}
+
+// Using ctx.fillText(txt, x, y) has problems in Chrome.
+// This seems to work.
+function ctxFillText(ctx, txt, x, y) {
+	var ofs = ctx.fillStyle;
+	ctx.fillStyle = "black";
+	ctx.fillText(txt, x, y);
+	ctx.fillStyle = ofs;
+}
 
 function Line(lni, off, txt, eol) {
 	this.lni = lni;
@@ -565,10 +582,16 @@ function Lines(els) {
 		var epos = pos;
 		var p0 = pos - ln.off;
 		if(p0 == ln.txt.length){
-			if(!ln.eol) {
-				return [ln.txt, ln.off, ln.off+ln.txt.length];
+			var txt = ln.txt;
+			var off = ln.off
+			for(var lnp = ln.prev; lnp && !lnp.eol; lnp = lnp.prev) {
+				txt = lnp.txt + txt;
+				off = lnp.off;
 			}
-			return [ln.txt+"\n", ln.off, ln.off+ln.txt.length+1];
+			if(!ln.eol) {
+				return [txt, off, off+txt.length];
+			}
+			return [txt+"\n", off, off+txt.length+1];
 		}
 		// heuristic: if click at the right of lparen and not
 		// at rparen, use the lparen.
@@ -581,22 +604,22 @@ function Lines(els) {
 		var c = ln.txt.charAt(p0);
 		if(islparen(c)){
 			pos++;
-			var n = 1;
 			var rc = rparen(c);
 			var txt = "";
+			var n = 1;
 			p1++;
 			epos++;
 			do {
+				var x = 0;
 				for(; p1 < ln.txt.length; p1++, epos++) {
-					var x = ln.txt.charAt(p1);
+					x = ln.txt.charAt(p1);
 					if(x == rc)
 						n--;
-					else if(x == c)
+					if(x == c)
 						n++;
-					if(n != 0)
-						txt += x;
 					if(n == 0)
-						return [txt, pos, epos-1];
+						return [txt, pos, epos];
+					txt += x;
 				}
 				if(ln.eol){
 					epos++;
@@ -604,7 +627,7 @@ function Lines(els) {
 				}
 				ln = ln.next;
 				p1 = 0;
-			} while(n > 0 && ln != null);
+			} while(ln != null);
 			return [txt, pos, epos];
 		}
 		if(isrparen(c)){
@@ -638,15 +661,25 @@ function Lines(els) {
 		}
 		if(!islongwordchar(c))
 			return [ln.txt.slice(p0, p1), pos, epos];
-		while(p0 > 0 && ischar(ln.txt.charAt(p0-1))){
+		var txt = ln.txt;
+		for(var lnp = ln.prev; lnp && !lnp.eol; lnp = lnp.prev) {
+			txt = lnp.txt + txt;
+			p0 += lnp.txt.length;
+			p1 += lnp.txt.length;
+		}
+		for(var lnn = ln; lnn.next && !lnn.eol; lnn = lnn.next) {
+			txt += lnn.next.txt;
+		}
+		while(p0 > 0 && ischar(txt.charAt(p0-1))){
 			pos--;
 			p0--;
 		}
-		while(p1 < ln.txt.length && ischar(ln.txt.charAt(p1))){
+
+		while(p1 < txt.length && ischar(txt.charAt(p1))){
 			epos++;
 			p1++;
 		}
-		return [ln.txt.slice(p0, p1), pos, epos];
+		return [txt.slice(p0, p1), pos, epos];
 	};
 
 	this.dump = function() {
@@ -745,6 +778,7 @@ function DrawLines(c) {
 		ctx.fillRect(0, pos, this.c.width, this.fontht);
 		// ctx.clearRect(1, pos, this.c.width-1, this.fontht);
 		ctx.fillStyle = ofs;
+
 		return true;
 	};
 
@@ -801,8 +835,9 @@ function DrawLines(c) {
 				ctx.fillRect(1, y, this.c.width-this.marginsz-1, lnht);
 				ctx.fillStyle = ofs;
 				// ctx.clearRect(1, y, this.c.width-this.marginsz-1, lnht);
+
 				var t = this.tabtxt(ln.txt);
-				ctx.fillText(t, this.marginsz, y);
+				ctxFillText(ctx, t, this.marginsz, y);
 				return true;
 			}
 			// up to p0 unselected
@@ -814,12 +849,14 @@ function DrawLines(c) {
 				var s0t = this.tabtxt(ln.txt.slice(0, s0));
 				s0pos = s0t.length;
 				dx += ctx.measureText(s0t).width;
+
 				var ofs = ctx.fillStyle;
 				ctx.fillStyle = "#ffffea";
 				ctx.fillRect(1, y, dx, lnht);
 				ctx.fillStyle = ofs;
 				// ctx.clearRect(1, y, dx, lnht);
 				ctx.fillText(s0t, this.marginsz, y);
+
 			}
 			// from p0 to p1 selected
 			var s1 = ln.txt.length - s0;
@@ -841,8 +878,8 @@ function DrawLines(c) {
 			} else {
 				ctx.fillRect(dx, y, sx, lnht);
 			}
+			ctxFillText(ctx, s1t, dx, y);
 			ctx.fillStyle = old;
-			ctx.fillText(s1t, dx, y);
 			if(this.p1 > ln.off+ln.txt.length) {
 				return true;
 			}
@@ -853,11 +890,12 @@ function DrawLines(c) {
 			// ctx.clearRect(dx+sx, y, this.c.width-(dx+sx)-this.marginsz-1, lnht);
 			ctx.fillStyle = ofs;
 
+
 			if(s1 >= ln.txt.length) {
 				return true;
 			}
 			var s2t = this.tabtxt(ln.txt.slice(s0+s1, ln.txt.length), s1pos);
-			ctx.fillText(s2t, dx+sx, y);
+			ctxFillText(ctx, s2t, dx+sx, y);
 			return true;
 		}
 
@@ -887,13 +925,13 @@ function DrawLines(c) {
 		var ctx = this.ctx;
 		var y0 = this.ln0.lni / this.lne.lni * this.c.height;
 		var dy = this.frlines / this.lne.lni * this.c.height;
-
 		var ofs = ctx.fillStyle;
 		ctx.fillStyle = "#ffffea";
 		ctx.fillRect(this.c.width-this.marginsz, 0, this.marginsz, y0);
 		// ctx.clearRect(this.c.width-this.marginsz, 0, this.marginsz, y0);
 		ctx.fillStyle = ofs;
 		
+
 		var old = ctx.fillStyle;
 		ctx.fillStyle = "#7373FF";
 		ctx.fillRect(this.c.width-this.marginsz, y0, this.marginsz, dy);
@@ -904,6 +942,7 @@ function DrawLines(c) {
 		ctx.fillRect(this.c.width-this.marginsz, y0+dy, this.marginsz, this.c.height-(y0+dy));
 		// ctx.clearRect(this.c.width-this.marginsz, y0+dy, this.marginsz, this.c.height-(y0+dy));
 		ctx.fillStyle = ofs;
+
 	};
 
 	this.redrawtext = function() {

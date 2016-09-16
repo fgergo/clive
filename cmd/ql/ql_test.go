@@ -23,6 +23,12 @@ var (
 `,
 		},
 		test.Run{
+			Line: `echo a \
+			b`,
+			Out: `a b
+`,
+		},
+		test.Run{
 			Line: `echo a ; echo b`,
 			Out: `a
 b
@@ -89,25 +95,15 @@ a b c
 `,
 		},
 		test.Run{
-			Line: `rf <2 >/tmp/3 ; rf <2 >>/tmp/3 ; cnt -lu </tmp/3`,
-			Out: `    8192  in
-`,
-		},
-		test.Run{
-			Line: `rf <[in] 2 >[out]/tmp/3 ; cnt -lu </tmp/3`,
+			Line: `rf <2 | 
+				cnt -lu`,
 			Out: `    4096  in
 `,
 		},
+		/*
 		test.Run{
-			Line: `{echo a ; echo b} | wc -l`,
-			Out: `       2
-`,
-		},
-		test.Run{
-			Line: `{lf -u 1 ; lf -u fdsafdsfa } >[out,err]/tmp/errs ; cat /tmp/errs`,
-			Out: `- rw-r--r--      0 /tmp/cmdtest/1
-lf: stat /tmp/cmdtest/fdsafdsfa: no such file or directory
-lf: stat /tmp/cmdtest/fdsafdsfa: no such file or directory
+			Line: `rf <[in] 2 >[out]/tmp/3 ; cnt -lu </tmp/3`,
+			Out: `    4096  in
 `,
 		},
 		test.Run{
@@ -119,6 +115,18 @@ lf: stat /tmp/cmdtest/fdsafdsfa: no such file or directory
 			// BUG? race here?
 			Line: `{ rf } <[in] 2 >[out]/tmp/3 ; cnt -lu </tmp/3`,
 			Out: `    4096  in
+`,
+		},
+		*/
+		test.Run{
+			Line: `{echo a ; echo b} | wc -l`,
+			Out: `       2
+`,
+		},
+		test.Run{
+			Line: `{lf -u 1 ; lf -u fdsafdsfa } >[out,err]/tmp/errs ; cat /tmp/errs`,
+			Out: `- rw-r--r--      0 /tmp/cmdtest/1
+lf: stat /tmp/cmdtest/fdsafdsfa: no such file or directory
 `,
 		},
 		test.Run{
@@ -227,6 +235,8 @@ func TestQl(t *testing.T) {
 }
 
 func TestPath(t *testing.T) {
+	t.Logf("path %v", cmd.GetEnvList("path"))
+	t.Logf("path %v", cmd.GetEnv("PATH"))
 	t.Logf("path %v", cmd.Path())
 	if p := cmd.LookPath("sh"); p != "/bin/sh" {
 		t.Fatalf("sh is %q\n", p)

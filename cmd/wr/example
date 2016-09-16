@@ -2,11 +2,15 @@ _ title
 perhaps continued here with |verb \| text
 _ author info
 _ more author info with |tt text|
+© 2016 Francisco J. Ballesteros
+
+= A chap with eñes
 
 * Abstract
 
 A section perhaps with the abstract if it's titled "Abstract".
-Tildes: Axéáñññ
+Tildes: Axéáñññ Unicode:  ½ ¼  ™  → ← µkernel.
+
 
 * A sect
 
@@ -14,7 +18,7 @@ Tildes: Axéáñññ
 
 Use [sect: A sect], or any keys, to refer to the section with the title containing all the words.
 
-*** A sub-sub sect
+*** A sub-sub section
 
 .abc escaped
 
@@ -24,14 +28,20 @@ Use [sect: A sect], or any keys, to refer to the section with the title containi
 
 %tex comment scaped
 
+! A footnote
+
 some
 text making one paragraph
 -
 with a forced line break
 
 |verb| at the start of a par.
+A escaped |X||X|, another ||||, and other |_| escapes, like _|X||X|_ these ones.
 
-another paragraph
+! Another footnote
+	continued here.
+
+another paragraph[foot: continued].
 
 	To relatively indent a paragraph, use the tab.
 
@@ -120,8 +130,8 @@ or
 make a set of lines fixed font
 |
 
-this paragraph has
-	[verb
+this paragraph has indented verbatim text
+	[verb with a tag name
 		.text starting with dot
 		some indented verbatim text, including ['s and ]'s and \n
 		nb = 0
@@ -131,6 +141,7 @@ this paragraph has
 		wrelems(out, e.Child, lvl+1)
 	]
 but the verbatim text could be unindented as well.
+A tag name (printed in bold) by be given after the |[verb| keyword.
 
 this other paragraph has a cite
 [cite: for this] and a url for [url: the lsub page|http://lsub.org] within the rest of the text
@@ -145,12 +156,25 @@ Cites like [cite: intro(1)] refer to the manual.
 # or the same for any other format
 	[fig key
 		logols.eps
-	Caption goes here
-	and perhaps continues here. 
+	Caption goes here for the figure in eps.
+	and perhaps continues here.
+	You may use |teletype| and *bold* but all caption is slanted and
+	using |_| is a _no-operation_.
 	]
 
+Other formats may be used, like png.
+	[fig key2
+		fig2.png
+	Another fig in png.
+	]
 
-or write pic directly in place
+Or gif:
+	[fig key2
+		fig3.gif
+	Another in gif.
+	]
+
+You can write pic directly in place
 
 [pic label
 	circle "hola"
@@ -183,18 +207,39 @@ describes rows. No other table formats are supported.
 eqns may have captions
 ]
 
-[code Listing
+[code key
 	{
 		some prog or code
 		taken verbatim to be printed
 	}
-it may have caption, the word after [code is used as a tag in the listing.
-the default is program. but all code listings share the same code counter
-despite the tag used. You can use |marks| and [cite: cites] here.
 ]
 
-and $so on...
+[grap
+	draw solid
+	1896	54.2
+	1900	49.4
+	1904	49.2
+	1908	50.0
+	1912	48.2
+A plot of data using grap for pic
+]
+
+and so on...
 
 * See also
 
 	- [cite: intro(1)] for so and so.
+
+= Another chapter
+
+* Another sect
+
+You may reg [fig: label2] other figures.
+
+[pic label2
+	circle "hola"
+	arrow
+	circle "caracola"
+the caption starts without indentation and
+may span several lines. 
+]

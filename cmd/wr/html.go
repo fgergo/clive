@@ -75,7 +75,7 @@ func (f *htmlFmt) wrText(e *Elem) {
 		return
 	}
 	switch e.Kind {
-	case Khdr1, Khdr2, Khdr3:
+	case Kchap, Khdr1, Khdr2, Khdr3, Kfoot:
 	default:
 		if e.Nb != "" {
 			f.printPar(e.Nb, " ")
@@ -131,6 +131,9 @@ func (f *htmlFmt) wrText(e *Elem) {
 		nb := strings.Replace(e.Data, ".", "x", -1)
 		f.printParCmd(`<a href="#sec`+nb+`">`, e.Data, `</a>`)
 		return
+	case Knref:
+		f.printParCmd(`<a href="#note`+e.Data+`">`, footRef(e.Data), `</a>`)
+		return
 	}
 	x := e.Data
 	if f.ups {
@@ -152,6 +155,7 @@ var hfnts = map[Kind]string{
 }
 
 var hhdrs = map[Kind]string{
+	Kchap: "h1",
 	Khdr1: "h2",
 	Khdr2: "h3",
 	Khdr3: "h3",
@@ -211,19 +215,11 @@ func (f *htmlFmt) fntSz(d string) {
 	f.fnts = append(f.fnts, n)
 }
 
-var hcaps = map[Kind]string{
-	Kfig:  "Figure",
-	Kpic:  "Figure",
-	Ktbl:  "Table",
-	Keqn:  "Eqn.",
-	Kcode: "Listing",
-}
-
 func (f *htmlFmt) wrCaption(e *Elem) {
 	if e.Caption == nil {
-		f.printCmd("<b>%s %s.</b>", hcaps[e.Kind], e.Nb)
+		f.printCmd("<b>%s %s.</b>", labels[e.Kind], e.Nb)
 	} else {
-		f.printCmd("<b>%s %s:</b> <em>", hcaps[e.Kind], e.Nb)
+		f.printCmd("<b>%s %s:</b> <em>", labels[e.Kind], e.Nb)
 		f.wrText(e.Caption)
 		f.printParCmd(`</em>`)
 	}
@@ -242,7 +238,9 @@ func (f *htmlFmt) wrElems(els ...*Elem) {
 			f.wrFnt(e)
 		case Kfont:
 			f.fntSz(e.Data)
-		case Khdr1, Khdr2, Khdr3:
+		case Kcop:
+			cop = e.Data
+		case Kchap, Khdr1, Khdr2, Khdr3:
 			f.closePar()
 			f.printParCmd(`<a name="` + llbl[e.Kind] +
 				strings.Replace(e.Nb, ".", "x", -1) + `"></a>`)
@@ -266,11 +264,11 @@ func (f *htmlFmt) wrElems(els ...*Elem) {
 			f.printParCmd(`<br>`)
 			f.closePar()
 		case Kindent:
-			// If it contains just a fig, pic, or tbl, then
+			// If it contains just a fig, pic, grap, or tbl, then
 			// skip this level and jump to the child
 			if len(e.Child) == 1 || len(e.Child) == 2 && e.Child[1].Kind == Kpar {
 				switch e.Child[0].Kind {
-				case Kfig, Kpic, Keqn, Ktbl, Kcode:
+				case Kfig, Kpic, Keqn, Ktbl, Kgrap, Kcode:
 					f.wrElems(e.Child...)
 					continue
 				}
@@ -295,16 +293,24 @@ func (f *htmlFmt) wrElems(els ...*Elem) {
 			f.wrText(e)
 			f.closePar()
 		case Kverb, Ksh:
-			f.printCmd(pref + `<code><pre>` + "\n")
+			f.printCmd(pref + `<code>`)
+			if e.Kind == Kverb && e.Tag != "" {
+				f.printCmd("<b>[%s]</b>:<br>", e.Tag)
+			}
+			f.printCmd(`<pre>` + "\n")
 			e.Data = indentVerb(e.Data, f.i0, f.tab)
 			f.printCmd("%s", html.EscapeString(e.Data))
 			f.printCmd(pref + `</pre></code>` + "\n")
+		case Kfoot:
+			// TODO: record footnote text and place a list at the end,
+			// like we do for bib.
 		case Ktext, Kurl, Kbib, Kcref, Keref, Ktref, Kfref, Ksref, Kcite:
 			f.wrText(e)
 		case Kfig:
 			f.printCmd(pref + "<p>\n")
 			f.printCmd(pref + "<hr>\n<center>\n")
-			s := strings.TrimSpace(e.Data)
+			e.Data = strings.TrimSpace(e.Data)
+			s := e.htmlfig()
 			if strings.HasSuffix(s, ".eps") {
 				s = epstopdf(s)
 			}
@@ -323,7 +329,7 @@ func (f *htmlFmt) wrElems(els ...*Elem) {
 			f.printCmd(pref + `</pre></code>` + "\n")
 			f.wrCaption(e)
 			f.printCmd(pref + "<hr><p>\n")
-		case Kpic, Keqn:
+		case Kpic, Kgrap, Keqn:
 			f.printCmd(pref + "<p>\n")
 			f.printCmd(pref + "<hr>\n<center>\n")
 			f.printCmd(pref + `<a name="` + llbl[e.Kind] + e.Nb + `"></a>` + "\n")
@@ -375,12 +381,16 @@ func (f *htmlFmt) wrBib(refs []string) {
 		return
 	}
 	f.printCmd("<p>\n")
+	r := "References"
+	if eflag {
+		r = "Referencias"
+	}
 	if !cliveMan {
-		f.printCmd("<p><h3>References</h3>\n<hr>\n")
+		f.printCmd("<p><h3>" + r + "</h3>\n<hr>\n")
 	} else if !f.hasSeeAlso {
 		f.printCmd("<p><h2>SEE ALSO</h2>\n<hr>\n")
 	} else {
-		f.printCmd("<p><h3>External references</h3>\n\n")
+		f.printCmd("<p><h3>External " + r + "</h3>\n\n")
 	}
 	f.printCmd("<p><ol>\n")
 	f.i0 = f.tab
@@ -389,6 +399,26 @@ func (f *htmlFmt) wrBib(refs []string) {
 		k := fmt.Sprintf("bib%d", i+1)
 		f.printParCmd(`<li> <a name="` + k + `"></a>`)
 		f.printPar(fmt.Sprintf("%s", r))
+		f.printParCmd("</li><p> ")
+		f.closePar()
+	}
+	f.printCmd("<p></ol>\n")
+	f.printCmd("<hr><p>\n")
+}
+
+func (f *htmlFmt) wrFoots(t *Text) {
+	foots := t.refs[Kfoot]
+	if len(foots) == 0 {
+		return
+	}
+	f.printCmd("<p><h3>Notes</h3>\n<hr>\n")
+	f.printCmd("<p><ol>\n")
+	for _, ek := range foots {
+		e := ek.el
+		f.i0, f.in = "", "  "
+		k := "note" + e.Nb
+		f.printParCmd(`<li> <a name="` + k + `"></a>`)
+		f.wrText(e)
 		f.printParCmd("</li><p> ")
 		f.closePar()
 	}
@@ -438,9 +468,13 @@ func (f *htmlFmt) run(t *Text) {
 	}
 	f.printCmd("<hr>\n<p>\n\n")
 	f.wrElems(els...)
+	f.wrFoots(t)
 	f.wrBib(t.bibrefs)
 	f.printCmd("<p>\n<hr><p>\n\n")
 	if !cliveMan {
+		if cop != "" {
+			f.printCmd("<p><b>(c) " + cop + "</b>\n<br>\n")
+		}
 		f.printCmd("</div></div>\n")
 		f.printCmd("</body>\n</html>\n")
 	} else if sect != "doc" {

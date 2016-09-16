@@ -118,8 +118,8 @@ func TestPack(t *testing.T) {
 	t.Logf("+%d\tsz = %d\n", n, buf.Len())
 
 	outs := []string{
-		"30 1 zx.Addr :0,0 <nil>",
-		"36 1 zx.Addr a file:1,2 <nil>",
+		"30 1 zx.Addr in:#0,#0 <nil>",
+		"36 1 zx.Addr a file:1,2:#3,#4 <nil>",
 		"14 1 zx.Dir  <nil>",
 		`42 1 zx.Dir Key2:"" key1:"val1" <nil>`,
 	}
@@ -127,7 +127,10 @@ func TestPack(t *testing.T) {
 	for _, s := range outs {
 		n, tag, m, err := ch.ReadMsg(&buf)
 		t.Logf("%d %d %T %v %v\n", n, tag, m, m, err)
-		if s != "" && s != fmt.Sprintf("%d %d %T %v %v", n, tag, m, m, err) {
+		xs := fmt.Sprintf("%d %d %T %v %v", n, tag, m, m, err)
+		if s != "" && s != xs {
+			t.Logf(" s=`%s`", s)
+			t.Logf(" xs=`%s`", xs)
 			t.Fatal("bad msg")
 		}
 		if err == io.EOF {
@@ -180,9 +183,9 @@ func TestConn(t *testing.T) {
 		`zx.Dir, `,
 		`zx.Dir, key1:"val1" key2:""`,
 		`zx.Dir, Key1:"val1" Key2:""`,
-		`zx.Addr, :0,0`,
+		`zx.Addr, in:#0,#0`,
 		`*errors.errorString, buggered or not implemented`,
-		`zx.Addr, a file:1,2`,
+		`zx.Addr, a file:1,2:#3,#4`,
 	}
 	for o := range p.In {
 		out := fmt.Sprintf("%T, %s", o, o)
@@ -231,4 +234,77 @@ func TestDir(t *testing.T) {
 		t.Fatalf("unexpected parsed dir string")
 	}
 
+}
+
+struct ptest {
+	p, e string
+	m    bool
+}
+
+func TestPathPrefixMatch(t *testing.T) {
+	debug = testing.Verbose()
+	ts := []ptest{
+		{"/a/b/c", "a", true},
+		{"/a/b/c", "a.*", false},
+		{"/a/b/c", "*1", false},
+		{"/a/b/c", "a[1]*", false},
+		{"/a/b/c", "/", true},
+		{"/a/b/c", "/a/*1", false},
+		{"/a/b/c", "/a/*1/a*", false},
+		{"/a/a1/a11", "a", true},
+		{"/a/a1/a11", "a.*", false},
+		{"/a/a1/a11", "*1", true},
+		{"/a/a1/a11", "a[1]*", true},
+		{"/a/a1/a11", "/", true},
+		{"/a/a1/a11", "/a/*1", true},
+		{"/a/a1/a11", "/a/*1/a*", true},
+		{"/a/a1/g11", "a", true},
+		{"/a/a1/g11", "a.*", false},
+		{"/a/a1/g11", "*1", true},
+		{"/a/a1/g11", "a[1]*", true},
+		{"/a/a1/g11", "/", true},
+		{"/a/a1/g11", "/a/*1", true},
+		{"/a/a1/g11", "/a/*1/a*", false},
+		{"/b/b1/b11", "a", false},
+		{"/b/b1/b11", "a.*", false},
+		{"/b/b1/b11", "*1", true},
+		{"/b/b1/b11", "a[1]*", false},
+		{"/b/b1/b11", "/", true},
+		{"/b/b1/b11", "/a/*1", false},
+		{"/b/b1/b11", "/a/*1/a*", false},
+		{"/", "a", false},
+		{"/", "a.*", false},
+		{"/", "*1", false},
+		{"/", "a[1]*", false},
+		{"/", "/", true},
+		{"/", "/a/*1", false},
+		{"/", "/a/*1/a*", false},
+	}
+	paths := []string{
+		"/a/b/c",
+		"/a/a1/a11",
+		"/a/a1/g11",
+		"/b/b1/b11",
+		"/",
+	}
+	exprs := []string{
+		"a",
+		"a.*",
+		"*1",
+		"a[1]*",
+		"/",
+		"/a/*1",
+		"/a/*1/a*",
+	}
+	i := 0
+	for _, p := range paths {
+		for _, e := range exprs {
+			v := PathPrefixMatch(p, e)
+			printf("\t{\"%s\", \"%s\", %v},\n", p, e, v)
+			if v != ts[i].m {
+				t.Fatalf("bad match")
+			}
+			i++
+		}
+	}
 }

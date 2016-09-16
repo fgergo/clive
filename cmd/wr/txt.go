@@ -58,6 +58,8 @@ func (f *txtFmt) wrText(e *Elem) {
 		fallthrough
 	case Kbib:
 		e.Data = "[" + e.Data + "]"
+	case Knref:
+		e.Data = "(" + e.Data + ")"
 	case Kcref, Keref, Ktref, Kfref, Ksref:
 	}
 	f.printPar(e.Data)
@@ -66,8 +68,11 @@ func (f *txtFmt) wrText(e *Elem) {
 	}
 }
 
+var cop = ""
+
 func (f *txtFmt) wrElems(els ...*Elem) {
 	nb := 0
+	inchap := false
 	pref := strings.Repeat(f.tab, f.lvl)
 	f.lvl++
 	defer func() {
@@ -76,12 +81,17 @@ func (f *txtFmt) wrElems(els ...*Elem) {
 	for _, e := range els {
 		f.i0, f.in = pref, pref
 		f.fn = nil
+		if e.Kind == Kchap {
+			inchap = true
+		}
 		switch e.Kind {
+		case Kcop:
+			cop = e.Data
 		case Kfont, Kit, Kbf, Ktt, Kitend, Kbfend, Kttend:
 			if f.sc != nil && !e.Inline {
 				f.printPar(" ")
 			}
-		case Khdr1, Khdr2, Khdr3:
+		case Kchap, Khdr1, Khdr2, Khdr3:
 			f.closePar()
 			f.hasSeeAlso = false
 			if cliveMan && strings.ToLower(e.Data) == "see also" {
@@ -89,6 +99,9 @@ func (f *txtFmt) wrElems(els ...*Elem) {
 			}
 			if cliveMan && e.Kind != Khdr3 {
 				f.fn = strings.ToUpper
+			}
+			if strings.ToLower(e.Data) == "abstract" && inchap {
+				e.Data = ""
 			}
 			f.newPar()
 			f.wrText(e)
@@ -128,12 +141,18 @@ func (f *txtFmt) wrElems(els ...*Elem) {
 			f.wrText(e)
 		case Kverb, Ksh:
 			f.closePar()
+			if e.Kind == Kverb && e.Tag != "" {
+				tg := indentVerb("["+e.Tag+"]", pref, f.tab)
+				f.printCmd("%s", tg)
+			}
 			e.Data = indentVerb(e.Data, pref, f.tab)
 			f.printCmd("%s", e.Data)
-		case Ktext, Kurl, Kbib, Kcref, Keref, Ktref, Kfref, Ksref, Kcite:
+		case Kfoot:
+			// printed at the end.
+		case Ktext, Kurl, Kbib, Kcref, Keref, Knref, Ktref, Kfref, Ksref, Kcite:
 			f.wrText(e)
-		case Kfig, Kpic:
-			if e.Kind == Kpic {
+		case Kfig, Kpic, Kgrap:
+			if e.Kind == Kpic || e.Kind == Kgrap {
 				e.Data = "pic drawing"
 			} else {
 				e.Data = strings.TrimSpace(e.Data)
@@ -143,12 +162,12 @@ func (f *txtFmt) wrElems(els ...*Elem) {
 			s := e.Data
 			f.printCmd("%s[%s]\n", xpref+f.tab, s)
 			if e.Caption == nil {
-				f.printCmd("%sFigure %s.\n\n", xpref, e.Nb)
+				f.printCmd("%s%s %s.\n\n", xpref, labels[e.Kind], e.Nb)
 				break
 			}
 			f.i0, f.in = xpref, xpref
 			f.newPar()
-			f.printPar("Figure ", e.Nb, ": ")
+			f.printPar(labels[e.Kind]+" ", e.Nb, ": ")
 			f.wrText(e.Caption)
 			f.closePar()
 		case Ktbl:
@@ -158,12 +177,12 @@ func (f *txtFmt) wrElems(els ...*Elem) {
 			f.lvl -= 2
 			xpref := pref + f.tab
 			if e.Caption == nil {
-				f.printCmd("%sTable %s.\n\n", xpref, e.Nb)
+				f.printCmd("%s%s %s.\n\n", xpref, labels[e.Kind], e.Nb)
 				break
 			}
 			f.i0, f.in = xpref, xpref
 			f.newPar()
-			f.printPar("Table ", e.Nb, ": ")
+			f.printPar(labels[e.Kind]+" ", e.Nb, ": ")
 			f.wrText(e.Caption)
 			f.closePar()
 		case Keqn:
@@ -172,13 +191,13 @@ func (f *txtFmt) wrElems(els ...*Elem) {
 			s := "eqn data"
 			f.printCmd("%s[%s]\n", xpref+f.tab, s)
 			if e.Caption == nil {
-				f.printCmd("%sEqn. %s.\n\n",
-					xpref, e.Nb)
+				f.printCmd("%s%s %s.\n\n",
+					xpref, labels[e.Kind], e.Nb)
 				break
 			}
 			f.i0, f.in = xpref, xpref
 			f.newPar()
-			f.printPar("Eqn. ", e.Nb, ": ")
+			f.printPar(labels[e.Kind]+" ", e.Nb, ": ")
 			f.wrText(e.Caption)
 			f.closePar()
 		case Kcode:
@@ -187,12 +206,12 @@ func (f *txtFmt) wrElems(els ...*Elem) {
 			f.closePar()
 			f.printCmd("%s", e.Data)
 			if e.Caption == nil {
-				f.printCmd("%sListing %s.\n\n", xpref, e.Nb)
+				f.printCmd("%s%s %s.\n\n", xpref, labels[e.Kind], e.Nb)
 				break
 			}
 			f.i0, f.in = xpref, xpref
 			f.newPar()
-			f.printPar("Listing ", e.Nb, ": ")
+			f.printPar(labels[e.Kind]+" ", e.Nb, ": ")
 			f.wrText(e.Caption)
 			f.closePar()
 		}
@@ -236,6 +255,22 @@ func (f *txtFmt) wrBib(refs []string) {
 	}
 }
 
+func (f *txtFmt) wrFoots(t *Text) {
+	foots := t.refs[Kfoot]
+	if len(foots) == 0 {
+		return
+	}
+	fmt.Fprintf(f.out, "\nNOTES\n\n")
+	for _, ek := range foots {
+		e := ek.el
+		f.i0, f.in = "", "  "
+		f.newPar()
+		f.printPar(fmt.Sprintf("%s. ", e.Nb))
+		f.wrText(e)
+		f.endPar()
+	}
+}
+
 func (f *txtFmt) run(t *Text) {
 	els := t.Elems
 	up := strings.ToUpper
@@ -249,7 +284,11 @@ func (f *txtFmt) run(t *Text) {
 	}
 	fmt.Fprintf(f.out, "\n")
 	f.wrElems(els...)
+	f.wrFoots(t)
 	f.wrBib(t.bibrefs)
+	if cop != "" {
+		fmt.Fprintf(f.out, "\n(c)  %s\n", cop)
+	}
 }
 
 // plain text writer (for man)

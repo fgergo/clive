@@ -135,8 +135,8 @@ func (t *Text) parse() {
 		t.splitMarks(p)
 		t.pprintf("PAR %s\n", p)
 		t.Elems = append(t.Elems, p)
-		if p.Kind == Ktitle || p.Kind == Khdr1 || p.Kind == Khdr2 ||
-			p.Kind == Khdr3 {
+		if p.Kind == Ktitle || p.Kind == Kchap ||
+			p.Kind == Khdr1 || p.Kind == Khdr2 || p.Kind == Khdr3 {
 			t.skipBlanks()
 		}
 	}
@@ -202,10 +202,14 @@ func (t *Text) parsePar() (el *Elem) {
 		return &Elem{Kind: k}
 	case Kbr:
 		return &Elem{Kind: k}
-	case Ktitle:
+	case Ktitle, Kfoot:
 		el := &Elem{Kind: k, Data: strings.TrimSpace(ln)}
-		return t.contdTitle(el)
-	case Khdr1, Khdr2, Khdr3:
+		el = t.contdTitle(el)
+		if k == Kfoot {
+			t.addRef(el, Kfoot)
+		}
+		return el
+	case Kchap, Khdr1, Khdr2, Khdr3:
 		el := &Elem{Kind: k, Data: strings.TrimSpace(ln)}
 		if strings.ToLower(ln) != "abstract" {
 			t.addRef(el, k)
@@ -231,7 +235,7 @@ func (t *Text) parsePar() (el *Elem) {
 		}
 		t.ttset = !t.ttset
 		return &Elem{Kind: k, indent: nt}
-	case Kverb, Ksh, Kfig, Ktbl, Keqn, Kpic, Kcode:
+	case Kverb, Ksh, Kfig, Ktbl, Keqn, Kpic, Kgrap, Kcode:
 		// could consume ln here to select labels, captions from data.
 		el := &Elem{Kind: k, Tag: strings.TrimSpace(ln), indent: nt}
 		el = t.contdRaw(el)
@@ -239,9 +243,9 @@ func (t *Text) parsePar() (el *Elem) {
 		case Ktbl:
 			el.parseTbl()
 			fallthrough
-		case Kfig, Keqn, Kcode, Kpic:
+		case Kfig, Keqn, Kcode, Kpic, Kgrap:
 			rk := k
-			if k == Kfig || k == Kpic {
+			if k == Kfig || k == Kpic || k == Kgrap {
 				rk = Kfig
 			}
 			t.addRef(el, rk)
@@ -325,7 +329,8 @@ func (ek *eKeys) setKeys() {
 	if e.Caption != nil {
 		ks = append(ks, keys(e.Caption.Data)...)
 	}
-	if e.Kind == Khdr1 || e.Kind == Khdr2 || e.Kind == Khdr3 {
+	if e.Kind == Kchap || e.Kind == Khdr1 || e.Kind == Khdr2 ||
+		e.Kind == Khdr3 || e.Kind == Kfoot {
 		ks = append(ks, keys(e.Data)...)
 	}
 	for _, w := range ks {
@@ -345,23 +350,45 @@ func (t *Text) addRef(el *Elem, k Kind) {
 	prev := "??"
 	nb := 0
 	switch k {
+	case Kchap:
+		t.nchap++
+		t.nhdr1 = 0
+		t.nhdr2 = 0
+		t.nhdr3 = 0
+		prev = ""
+		nb = t.nchap
 	case Khdr1:
 		t.nhdr1++
 		t.nhdr2 = 0
 		t.nhdr3 = 0
 		nb = t.nhdr1
-		prev = ""
+		if t.nchap > 0 {
+			prev = fmt.Sprintf("%d.", t.nchap)
+		} else {
+			prev = ""
+		}
 	case Khdr2:
 		t.nhdr2++
 		t.nhdr3 = 0
-		prev = fmt.Sprintf("%d.", t.nhdr1)
+		if t.nchap > 0 {
+			prev = fmt.Sprintf("%d.%d.", t.nchap, t.nhdr1)
+		} else {
+			prev = fmt.Sprintf("%d.", t.nhdr1)
+		}
 		if h1 := refs[Khdr1]; len(h1) > 0 {
 			prev = h1[len(h1)-1].el.Nb + "."
 		}
 		nb = t.nhdr2
 	case Khdr3:
 		t.nhdr3++
-		prev = fmt.Sprintf("%d.%d.", t.nhdr1, t.nhdr2)
+		if t.nchap > 0 {
+			prev = fmt.Sprintf("%d.%d.%d.", t.nchap, t.nhdr1, t.nhdr2)
+		} else {
+			prev = fmt.Sprintf("%d.%d.", t.nhdr1, t.nhdr2)
+		}
+		if h2 := refs[Khdr2]; len(h2) > 0 {
+			prev = h2[len(h2)-1].el.Nb + "."
+		}
 		nb = t.nhdr3
 	default:
 		prev = ""
@@ -451,6 +478,7 @@ var cites = map[string]Kind{
 	"code": Kcref,
 	"tbl":  Ktref,
 	"eqn":  Keref,
+	"foot": Knref,
 	"url":  Kurl,
 	"bib":  Kbib,
 	"cite": Kcite,
@@ -460,7 +488,7 @@ var cites = map[string]Kind{
 // inlined marks and raw text elems.
 func (t *Text) splitMarks(p *Elem) {
 	switch p.Kind {
-	case Ktext, Kenum, Kitem, Khdr1, Ktitle, Khdr2, Khdr3:
+	case Ktext, Kfoot, Kenum, Kitem, Ktitle, Kchap, Khdr1, Khdr2, Khdr3:
 		if !strings.ContainsAny(p.Data, "*_|[") {
 			return
 		}
@@ -484,8 +512,8 @@ Loop:
 			els = appText(els, k, indent, s)
 			break
 		}
-		if i < len(s)-1 && strings.ContainsRune("*_|", rune(s[i])) && s[i] == s[i+1] {
-			// scaped mark
+		if t.ttset && i < len(s)-1 && strings.ContainsRune("*_|", rune(s[i])) && s[i] == s[i+1] {
+			// escaped mark
 			els = appText(els, k, indent, s[:i+1])
 			s = s[i+2:]
 			continue
@@ -493,7 +521,7 @@ Loop:
 		if i > 0 {
 			els = appText(els, k, indent, s[:i])
 		}
-		if s[i] == '_' {
+		if s[i] == '_' && !t.bfset && !t.ttset {
 			tk := Kit
 			if t.itset {
 				tk = Kitend
@@ -503,7 +531,7 @@ Loop:
 			s = s[i+1:]
 			continue
 		}
-		if s[i] == '*' {
+		if s[i] == '*' && !t.itset && !t.ttset {
 			tk := Kbf
 			if t.bfset {
 				tk = Kbfend
@@ -513,7 +541,7 @@ Loop:
 			s = s[i+1:]
 			continue
 		}
-		if s[i] == '|' {
+		if s[i] == '|' && !t.itset && !t.bfset {
 			tk := Ktt
 			if t.ttset {
 				tk = Kttend
@@ -774,6 +802,7 @@ func (t *Text) fixRefs() {
 	if t.refs == nil {
 		return
 	}
+	t.refs[Ktitle] = append(t.refs[Ktitle], t.refs[Kchap]...)
 	t.refs[Ktitle] = append(t.refs[Ktitle], t.refs[Khdr1]...)
 	t.refs[Ktitle] = append(t.refs[Ktitle], t.refs[Khdr2]...)
 	t.refs[Ktitle] = append(t.refs[Ktitle], t.refs[Khdr3]...)
@@ -801,6 +830,8 @@ func (e *Elem) fixRefs(refs map[Kind][]*eKeys) {
 		e.setRef(refs[Ktbl])
 	case Keref:
 		e.setRef(refs[Keqn])
+	case Knref:
+		e.setRef(refs[Kfoot])
 	case Kcref:
 		e.setRef(refs[Kcode])
 	}

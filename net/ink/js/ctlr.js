@@ -17,6 +17,7 @@ function CliveCtlr() {
 //	}
 // fgergo, commented out 3 lines: chrome console shows websocket error
 
+
 	$(this.d).addClass("clivectl");
 	var self = this;
 	// use self here, because post will be bound also to this.d

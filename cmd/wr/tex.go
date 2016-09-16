@@ -1,12 +1,8 @@
 package main
 
 import (
-	"bytes"
-	"clive/cmd"
 	"fmt"
 	"io"
-	"os/exec"
-	"path"
 	"strconv"
 	"strings"
 )
@@ -18,7 +14,7 @@ struct texFmt {
 	outfig string
 }
 
-const lspecial = `&_$\%{}#`
+const lspecial = `&_$\%{}#^`
 
 func escTex(s string) string {
 	ns := ""
@@ -40,58 +36,15 @@ func escTex(s string) string {
 	return ns
 }
 
-var pic2eps = `pic | tbl | eqn | groff -ms -m pspic | ps2eps | epstopdf -f -o=`
-
-var figk = map[Kind]string{
-	Kfig: "pic",
-	Kpic: "pic",
-	Keqn: "eqn",
-}
 var figstart = map[Kind]string{
-	Kpic: ".PS",
-	Keqn: ".EQ",
+	Kpic:  ".PS",
+	Kgrap: ".G1",
+	Keqn:  ".EQ",
 }
 var figend = map[Kind]string{
-	Kpic: ".PE",
-	Keqn: ".EN",
-}
-
-// pipe the pic data into pic2eps and return the path to the eps file for the pic.
-func (e *Elem) pic(outfig string) string {
-	outf := fmt.Sprintf("%s.%s%s", path.Base(outfig), figk[e.Kind], e.Nb)
-	outf = strings.Replace(outf, ".", "_", -1) + ".pdf"
-	xcmd := exec.Command("sh", "-c", pic2eps+outf)
-	var b bytes.Buffer
-	b.WriteString(figstart[e.Kind] + "\n")
-	b.WriteString(e.Data)
-	b.WriteString(figend[e.Kind] + "\n")
-	xcmd.Stdin = &b
-	err := xcmd.Run()
-	if err != nil {
-		cmd.Warn("mkpic: %s", err)
-		return "none.png"
-	}
-	cmd.Warn("pic %s", outf)
-	return outf
-}
-
-func epstopdf(fn string) string {
-	if strings.HasSuffix(fn, ".pdf") {
-		return fn
-	}
-	outf := fn
-	if strings.HasSuffix(outf, ".eps") {
-		outf = outf[:len(outf)-4]
-	}
-	outf += ".pdf"
-	xcmd := exec.Command("epstopdf", "-o", outf, fn)
-	err := xcmd.Run()
-	if err != nil {
-		cmd.Warn("epstopdf: %s", err)
-		return "none.png"
-	}
-	cmd.Warn("pic %s", outf)
-	return outf
+	Kpic:  ".PE",
+	Kgrap: ".G2",
+	Keqn:  ".EN",
 }
 
 func (f *texFmt) wrText(e *Elem) {
@@ -99,7 +52,7 @@ func (f *texFmt) wrText(e *Elem) {
 		return
 	}
 	switch e.Kind {
-	case Khdr1, Khdr2, Khdr3:
+	case Kchap, Khdr1, Khdr2, Khdr3, Kfoot:
 	default:
 		if e.Nb != "" {
 			f.printPar(e.Nb, " ")
@@ -144,6 +97,9 @@ func (f *texFmt) wrText(e *Elem) {
 		e.Data = "[" + e.Data + "]"
 		f.printPar(e.Data)
 	default:
+		if e.Kind == Knref {
+			e.Data = footRef(e.Data)
+		}
 		f.printPar(e.Data)
 		for _, c := range e.Textchild {
 			f.wrText(c)
@@ -170,6 +126,7 @@ var lfnts = map[Kind]string{
 }
 
 var lhdrs = map[Kind]string{
+	Kchap: "chapter",
 	Khdr1: "section",
 	Khdr2: "subsection",
 	Khdr3: "subsubsection",
@@ -229,9 +186,12 @@ func (f *texFmt) wrCaption(e *Elem) {
 var llbl = map[Kind]string{
 	Kfig:  "fig",
 	Kpic:  "fig",
+	Kgrap: "fig",
 	Kcode: "lst",
+	Kfoot: "foot",
 	Keqn:  "eqn",
 	Ktbl:  "tbl",
+	Kchap: "sec",
 	Khdr1: "sec",
 	Khdr2: "sec",
 	Khdr3: "sec",
@@ -239,6 +199,7 @@ var llbl = map[Kind]string{
 
 func (f *texFmt) wrElems(els ...*Elem) {
 	inabs := false
+	inchap := false
 	pref := strings.Repeat(f.tab, f.lvl)
 	f.lvl++
 	defer func() {
@@ -246,18 +207,29 @@ func (f *texFmt) wrElems(els ...*Elem) {
 	}()
 	for _, e := range els {
 		f.i0, f.in = pref, pref
+		if e.Kind == Kchap {
+			inchap = true
+		}
 		switch e.Kind {
 		case Kit, Kbf, Ktt, Kitend, Kbfend, Kttend:
 			f.wrFnt(e)
 		case Kfont:
 			f.fntSz(e.Data)
-		case Khdr1, Khdr2, Khdr3:
+		case Kchap, Khdr1, Khdr2, Khdr3:
 			if inabs {
-				f.printCmd(`\end{abstract}` + "\n\n")
+				if inchap {
+					f.printCmd(`\end{quote}` + "\n\n")
+				} else {
+					f.printCmd(`\end{abstract}` + "\n\n")
+				}
 				inabs = false
 			}
 			if strings.ToLower(e.Data) == "abstract" {
-				f.printCmd(`\begin{abstract}` + "\n")
+				if inchap {
+					f.printCmd(`\begin{quote}` + "\n")
+				} else {
+					f.printCmd(`\begin{abstract}` + "\n")
+				}
 				inabs = true
 				break
 			}
@@ -271,7 +243,11 @@ func (f *texFmt) wrElems(els ...*Elem) {
 		case Kpar:
 			f.printCmd("\n")
 			if inabs {
-				f.printCmd(`\end{abstract}` + "\n")
+				if inchap {
+					f.printCmd(`\end{quote}` + "\n")
+				} else {
+					f.printCmd(`\end{abstract}` + "\n")
+				}
 				inabs = false
 			}
 		case Kbr:
@@ -282,7 +258,7 @@ func (f *texFmt) wrElems(els ...*Elem) {
 			// skip this level and jump to the child
 			if len(e.Child) == 1 || len(e.Child) == 2 && e.Child[1].Kind == Kpar {
 				switch e.Child[0].Kind {
-				case Kfig, Kpic, Keqn, Ktbl, Kcode:
+				case Kfig, Kpic, Keqn, Ktbl, Kgrap, Kcode:
 					f.wrElems(e.Child...)
 					continue
 				}
@@ -310,23 +286,33 @@ func (f *texFmt) wrElems(els ...*Elem) {
 			f.wrText(e)
 		case Kverb, Ksh:
 			f.printCmd(pref + `\begin{verbatim}` + "\n")
+			if e.Kind == Kverb && e.Tag != "" {
+				tg := indentVerb("["+e.Tag+"]", pref, f.tab)
+				f.printCmd("%s", tg)
+			}
 			e.Data = indentVerb(e.Data, f.i0, f.tab)
 			f.printCmd("%s", e.Data)
 			f.printCmd(pref + `\end{verbatim}` + "\n")
-		case Ktext, Kurl, Kbib, Kcref, Keref, Ktref, Kfref, Ksref, Kcite:
+		case Kfoot:
+			f.printCmd(`\let\thefootnote\relax\footnote{` + e.Nb + ". ")
 			f.wrText(e)
-		case Kfig, Kpic, Kcode, Keqn:
-			f.printCmd(pref + `\begin{figure}` + "\n")
+			f.printCmd(`}` + "\n")
+		case Ktext, Kurl, Kbib, Kcref, Keref, Ktref, Kfref, Knref, Ksref, Kcite:
+			f.wrText(e)
+		case Kfig, Kpic, Kcode, Kgrap, Keqn:
+			if e.Kind == Kcode {
+				f.printCmd(pref + `\begin[h]{figure}` + "\n")
+			} else {
+				f.printCmd(pref + `\begin{figure}` + "\n")
+			}
 			f.printCmd(pref + `\centering` + "\n")
 			switch e.Kind {
-			case Kpic:
+			case Kpic, Kgrap:
 				fn := e.pic(f.outfig)
 				f.printCmd("%s\n", pref+f.tab+`\includegraphics{`+fn+"}")
 			case Kfig:
-				fn := strings.TrimSpace(e.Data)
-				if strings.HasSuffix(fn, ".eps") {
-					fn = epstopdf(fn)
-				}
+				e.Data = strings.TrimSpace(e.Data)
+				fn := e.pdffig()
 				f.printCmd("%s\n", pref+f.tab+`\includegraphics{`+fn+"}")
 			case Keqn:
 				fn := e.pic(f.outfig)
@@ -404,11 +390,14 @@ func (f *texFmt) wrBib(refs []string) {
 }
 
 func (f *texFmt) run(t *Text) {
-	f.printCmd("%s\n", `% Compile with latex, not pdflatex (or pic circles wont show up)`)
-	f.printCmd("%s\n", `% If there are problems with figures, remember they should be eps or pic`)
-	f.printCmd(`\documentclass[a4paper]{article}` + "\n")
+	f.printCmd("%s\n", `% use pdflatex to compile this.`)
+	if t.nchap > 0 {
+		f.printCmd(`\documentclass[a4paper]{book}` + "\n")
+	} else {
+		f.printCmd(`\documentclass[a4paper]{article}` + "\n")
+	}
 	f.printCmd(`\usepackage{graphicx}` + "\n")
-	f.printCmd(`\usepackage[utf8]{inputenc}` + "\n")
+	f.printCmd(`\usepackage[utf8x]{inputenc}` + "\n")
 	els := t.Elems
 	n := 0
 	for len(els) > 0 && els[0].Kind == Ktitle {

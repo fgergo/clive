@@ -1007,12 +1007,15 @@ function CliveText(d, c, cid, id) {
 			this.locking = true;
 			this.post(["hold"]);
 			console.log("holding...");
-			return false;
 		}
 		try {
 			e.preventDefault();
 			var d = e.wheelDelta * -1;
 			var s = 1;
+			// It seems wheel events still get sent
+			// to old windows after entering a different
+			// window.
+			// The next check is a workaround for that.
 			if(d < 0){
 				d = -d;
 				d = 1 + Math.floor(d/10);

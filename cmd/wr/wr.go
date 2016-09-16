@@ -12,6 +12,7 @@ import (
 	"clive/zx"
 	"fmt"
 	"io"
+	"os"
 	fpath "path"
 	"path/filepath"
 )
@@ -31,7 +32,7 @@ var (
 	outpdf             string
 	uname, oname, oext string
 	max                = 70
-	refsdir            = refs.Dir
+	refsdir            = ""
 	wrs                = map[string]func(*Text, int, io.Writer, string){
 		".man":  wrtxt,
 		".ms":   wrroff,
@@ -41,7 +42,27 @@ var (
 		".html": wrhtml,
 	}
 
-	hflag, tflag, lflag, mflag, pflag, psflag, notux bool
+	eflag, hflag, tflag, lflag, mflag, pflag, psflag, notux bool
+
+	labels = map[Kind]string{
+		Kfig:  "Figure",
+		Kpic:  "Figure",
+		Kgrap: "Figure",
+		Ktbl:  "Table",
+		Keqn:  "Eqn.",
+		Kcode: "Listing",
+		Kchap: "Chapter",
+	}
+
+	splabels = map[Kind]string{
+		Kfig:  "Figura",
+		Kpic:  "Figura",
+		Kgrap: "Figura",
+		Ktbl:  "Tabla",
+		Keqn:  "Ec.",
+		Kcode: "Listado",
+		Kchap: "Capítulo",
+	}
 )
 
 func outExt() string {
@@ -91,8 +112,8 @@ func out(t *Text) error {
 	}
 	var b bytes.Buffer
 	if oext == ".ms" {
-		fmt.Fprintf(&b, `.\" pic %s | tbl | eqn | `+
-			`groff -Tutf8 -ms -m pspic  |pstopdf -i -o  %s`+"\n",
+		fmt.Fprintf(&b, `.\" grap %s | pic  | tbl | eqn | `+
+			`groff  -ms -m pspic  |pstopdf -i -o  %s`+"\n",
 			oname, outpdf)
 	}
 	wr(t, max, &b, outfig)
@@ -224,6 +245,7 @@ func main() {
 	opts.NewFlag("P", "debug paragraphs", &debugPars)
 	opts.NewFlag("b", "dir: change the default refer bib dir", &refsdir)
 	opts.NewFlag("u", "do not generate output for unix", &notux)
+	opts.NewFlag("e", "use spanish for labels", &eflag)
 
 	args := opts.Parse()
 	if !notux {
@@ -232,12 +254,21 @@ func main() {
 	if oname == "stdout" {
 		oname = "-"
 	}
+	if refsdir == "" {
+		refsdir = refs.Dir
+		if _, err := os.Stat("/u/bib"); err == nil {
+			refsdir = "/u/bib"
+		}
+	}
 	hflag = hflag || sect != ""
 	cliveMan = sect != "" || mflag
 	if len(args) != 0 {
 		cmd.SetIn("in", cmd.Files(args...))
 	}
 	oext = outExt()
+	if eflag {
+		labels = splabels
+	}
 	sts := wr(cmd.Lines(cmd.In("in")))
 	if sts != nil {
 		cmd.Fatal(sts)
